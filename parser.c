@@ -4,7 +4,6 @@
 #include <string.h>
 #include <assert.h>
 #include <sys/types.h>
-
 static int valid_action(char *s)
 {
     for (size_t i = 0; i < AVALIABLE_ACT; i++)
@@ -41,7 +40,8 @@ static int decode_url(char *url, uint8_t *buf, size_t n)
     return 0;
 }
 
-void free_syntax_block_content(action_syntax_t *syntax_block){
+void free_syntax_block_content(action_syntax_t *syntax_block)
+{
     if(syntax_block->kw1!=NULL){
         free(syntax_block->kw1);
     }
@@ -101,128 +101,76 @@ FAIL:
     return NULL;
 }
 
+static inline int content_parser(size_t should_skipped_byte,char*req,size_t n,action_syntax_t* syntax_block){
+    uint8_t *alloc_key = NULL;
+    uint8_t *alloc_value = NULL;
+    if (n <= should_skipped_byte)
+        goto FAIL;
+
+    char *key_ptr = req + should_skipped_byte;
+
+    char *first_whitespace_pos_after_key = strchr(key_ptr, ' ');
+
+    if (first_whitespace_pos_after_key == NULL)
+    {
+        goto FAIL;
+    }
+
+    // key is allowed to encoded to invisiable byte
+    alloc_key = malloc(first_whitespace_pos_after_key - key_ptr);
+    if (decode_url(key_ptr, alloc_key, first_whitespace_pos_after_key - key_ptr) == -1)
+    {
+        goto FAIL;
+    }
+    
+    // read real content length from header: Content-Length
+    ssize_t Content_Length_header;
+    char*newptr = Content_Length_in_header(req,n,&Content_Length_header);
+    
+    char*double_CRLF = strstr(newptr,"\r\n\r\n");
+    if(double_CRLF == NULL){
+        goto FAIL;
+    }
+
+    if(Content_Length_header == -1) goto FAIL;
+
+    char*body_start = double_CRLF + 4;// skip \\r\\n\\r\\n
+    size_t real_content_length = n - (req - body_start);
+    if(Content_Length_header != real_content_length)
+    {
+        goto FAIL;
+    }
+    
+    alloc_value = malloc(real_content_length);
+    memcpy(alloc_value,body_start,real_content_length);
+    syntax_block->kw1 = alloc_key;
+    syntax_block->kw2 = alloc_value;
+
+    return 0;
+
+    FAIL:
+    if (alloc_key != NULL)
+    {
+        free(alloc_key);
+    }
+    if(alloc_value != NULL)
+    {
+        free(alloc_value);
+    }
+    return -1;
+
+}
 //TODO:TTL should be support
 static int POST_req_parser_kw(char*req,size_t n,action_syntax_t* syntax_block)
 {
     size_t should_skipped_byte = 6; // skip "POST /"
-    uint8_t *alloc_key = NULL;
-    uint8_t *alloc_value = NULL;
-    if (n <= should_skipped_byte)
-        goto FAIL;
-
-    char *key_ptr = req + should_skipped_byte;
-
-    char *first_whitespace_pos_after_key = strchr(key_ptr, ' ');
-
-    if (first_whitespace_pos_after_key == NULL)
-    {
-        goto FAIL;
-    }
-
-    // key is allowed to be encoded invisiable byte
-    alloc_key = malloc(first_whitespace_pos_after_key - key_ptr);
-    if (decode_url(key_ptr, alloc_key, first_whitespace_pos_after_key - key_ptr) == -1)
-    {
-        goto FAIL;
-    }
-    
-    // read real content length from header: Content-Length
-    ssize_t Content_Length_header;
-    char*newptr = Content_Length_in_header(req,n,&Content_Length_header);
-    
-    char*double_CRLF = strstr(newptr,"\r\n\r\n");
-    if(double_CRLF == NULL){
-        goto FAIL;
-    }
-
-    if(Content_Length_header == -1) goto FAIL;
-
-    char*body_start = double_CRLF + 4;// skip \\r\\n\\r\\n
-    size_t real_content_length = n - (req - body_start);
-    if(Content_Length_header != real_content_length)
-    {
-        goto FAIL;
-    }
-    
-    alloc_value = malloc(real_content_length);
-    memcpy(alloc_value,body_start,real_content_length);
-    syntax_block->kw1 = alloc_key;
-    syntax_block->kw2 = alloc_value;
-
-    return 0;
-
-    FAIL:
-    if (alloc_key != NULL)
-    {
-        free(alloc_key);
-    }
-    if(alloc_value != NULL)
-    {
-        free(alloc_value);
-    }
-    return -1;
+    return content_parser(should_skipped_byte,req,n,syntax_block);
 }
 
-//TODO:TTL should be support
 static int PUT_req_parser_kw(char*req,size_t n,action_syntax_t* syntax_block)
 {
     size_t should_skipped_byte = 5; // skip "PUT /"
-    uint8_t *alloc_key = NULL;
-    uint8_t *alloc_value = NULL;
-    if (n <= should_skipped_byte)
-        goto FAIL;
-
-    char *key_ptr = req + should_skipped_byte;
-
-    char *first_whitespace_pos_after_key = strchr(key_ptr, ' ');
-
-    if (first_whitespace_pos_after_key == NULL)
-    {
-        goto FAIL;
-    }
-
-    // key is allowed to be encoded invisiable byte
-    alloc_key = malloc(first_whitespace_pos_after_key - key_ptr);
-    if (decode_url(key_ptr, alloc_key, first_whitespace_pos_after_key - key_ptr) == -1)
-    {
-        goto FAIL;
-    }
-    
-    // read real content length from header: Content-Length
-    ssize_t Content_Length_header;
-    char*newptr = Content_Length_in_header(req,n,&Content_Length_header);
-    
-    char*double_CRLF = strstr(newptr,"\r\n\r\n");
-    if(double_CRLF == NULL){
-        goto FAIL;
-    }
-
-    if(Content_Length_header == -1) goto FAIL;
-
-    char*body_start = double_CRLF + 4;// skip \\r\\n\\r\\n
-    size_t real_content_length = n - (req - body_start);
-    if(Content_Length_header != real_content_length)
-    {
-        goto FAIL;
-    }
-    
-    alloc_value = malloc(real_content_length);
-    memcpy(alloc_value,body_start,real_content_length);
-    syntax_block->kw1 = alloc_key;
-    syntax_block->kw2 = alloc_value;
-
-    return 0;
-
-    FAIL:
-    if (alloc_key != NULL)
-    {
-        free(alloc_key);
-    }
-    if(alloc_value != NULL)
-    {
-        free(alloc_value);
-    }
-    return -1;
+    return content_parser(should_skipped_byte,req,n,syntax_block);
 }
 
 

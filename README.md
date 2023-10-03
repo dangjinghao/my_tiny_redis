@@ -3,15 +3,18 @@
 - using LLRBtree to store and search data
 - trying to program with moderncpp
 - http request support
-- try ctest
+- try gtest
+- io uring
+
+**encoding ? is possible not supported
 ## action
 **PUT**
 ```
-POST /[key] HTTP/x.x\r\n
+POST /[key](?ttl=[secs]) HTTP/x.x\r\n
 ...(skip those headers)
 Content-Length: [length]\r\n
 ...
-val: [val]\r\n
+[val]\r\n
 ```
 
 **DELETE** 
@@ -21,11 +24,11 @@ DELETE /[key] HTTP/x.x\r\n
 
 **MODIFY**
 ```
-POST /[key] HTTP/x.x\r\n
+POST /[key](?ttl=[secs]) HTTP/x.x\r\n
 ...(skip those headers)
 Content-Length: [length]\r\n
 ...
-val: [val]\r\n
+[val]\r\n
 ```
 
 **GET**
