@@ -15,6 +15,15 @@ const char* act_str[] = {
     "GET"
 };
 
+const char* type_str[] = {
+    "STRING",
+    "INT", 
+    "COUNT", 
+    "FLOAT",  
+
+};
+
+const size_t AVALIABLE_TYPE = 4;
 
 static int valid_action(char *s)
 {
@@ -26,9 +35,21 @@ static int valid_action(char *s)
     return -1;
 }
 
-static int decode_url(char *url, uint8_t *buf, size_t n)
+static int valid_type(char *s)
+{
+    for (size_t i = 0; i < AVALIABLE_TYPE; i++)
+    {
+        if (strcmp(type_str[i], s) == 0)
+            return i;
+    }
+    return -1;
+}
+
+
+static size_t decode_url(char *url, uint8_t *buf, size_t n)
 {
     size_t i = 0, j = 0;
+    size_t key_size = n;
     while (i < n)
     {
         if (url[i] == '%')
@@ -39,26 +60,30 @@ static int decode_url(char *url, uint8_t *buf, size_t n)
 
             buf[j] = onebyte;
             i += 2;
-        }
+        }    
         else
         {
             buf[j] = url[i];
+            if (url[i] == '?')
+            {
+                key_size = j; 
+            }
         }
 
         i += 1;
         j += 1;
     }
 
-    return 0;
+    return key_size;
 }
 
 void free_syntax_block_content(action_syntax_t *syntax_block)
 {
-    if(syntax_block->kw1!=NULL){
-        free(syntax_block->kw1);
+    if(syntax_block->key!=NULL){
+        free(syntax_block->key);
     }
-    if(syntax_block->kw2!=NULL){
-        free(syntax_block->kw2);
+    if(syntax_block->val!=NULL){
+        free(syntax_block->val);
     }
     
 }
@@ -85,13 +110,10 @@ static int GET_req_parser_kw(char *req, size_t n, action_syntax_t *syntax_block)
 
     // key is allowed to be encoded invisiable byte
     alloc_key = malloc(first_whitespace_pos - key_ptr);
-    if (decode_url(key_ptr, alloc_key, first_whitespace_pos - key_ptr) == -1)
-    {
-        log_msg_debug("decoding url error");
-        goto FAIL;
-    }
-    syntax_block->kw1 = alloc_key;
-    syntax_block->kw2 = NULL;
+    size_t key_size = decode_url(key_ptr, alloc_key, first_whitespace_pos - key_ptr);
+    alloc_key[key_size] = '\0';
+    syntax_block->key = alloc_key;
+    syntax_block->val = NULL;
 
     return 0;
 
@@ -105,10 +127,12 @@ FAIL:
 
 static char* Content_Length_in_header(char*req,size_t n,size_t*num){
     char* content_length_pos = strstr(req,"Content-Length: ");
-    if(content_length_pos == NULL) goto FAIL;
+    if(content_length_pos == NULL || content_length_pos - req + 16 >= n) goto FAIL; // maybe there are not vaild infomation in n range
+
     content_length_pos += 16;
     char*end_CRLF = strstr(content_length_pos,"\r\n");
-    if(end_CRLF == NULL) goto FAIL;
+    if(end_CRLF == NULL || end_CRLF - req >= n) goto FAIL;
+    
     *num = strtoul(content_length_pos,&end_CRLF,10);
 
     if(num == 0) goto FAIL;
@@ -117,6 +141,73 @@ static char* Content_Length_in_header(char*req,size_t n,size_t*num){
     
 FAIL:
     return NULL;
+}
+
+static int url_query_kv_part(char*s,action_syntax_t* syntax_block,size_t n)
+{
+    char buf[128] = {0};
+    char*key_end = strchr(s,'=');
+    if(key_end == NULL|| key_end - s >= n)
+    {
+        return -1;
+    }
+    
+    if(strncmp("TTL",s,3) == 0)
+    {
+        strncpy(buf,key_end + 1,n - (key_end + 1 - s));
+        syntax_block->TTL = atol(buf); 
+    }
+    else if(strncmp("TYPE",s,4) == 0)
+    {
+        strncpy(buf,key_end + 1,n - (key_end + 1 - s));
+        int current_type = valid_type(buf);    
+        if(current_type == -1) return -1;
+
+        syntax_block->data_type = current_type;
+    }
+
+
+
+    return 0;
+}
+
+// TODO:url_query_parser,only modify data_type and TTL
+static int url_query_parser(char*URL_without_start_slash,action_syntax_t* syntax_block,size_t URL_without_start_slash_N)
+{
+    char*start_query = strchr(URL_without_start_slash,'?');
+    if(start_query == NULL || start_query - URL_without_start_slash >= URL_without_start_slash_N)
+    {
+        return -1;  
+    }
+
+    start_query +=1;
+    char*end_q1 = strchr(start_query,'&');
+
+    if(end_q1 == NULL || end_q1 - URL_without_start_slash >= URL_without_start_slash_N)
+    {
+        return -1;  
+    }
+
+
+    syntax_block->TTL = 0;
+    syntax_block->data_type = 0;
+
+    
+    if(-1 ==url_query_kv_part(start_query,syntax_block,end_q1 - start_query))
+    {
+        log_msg_debug("not a correct query in the url");
+    }
+    
+    char*start_q2 = end_q1 +1;
+
+    if( -1 ==url_query_kv_part(start_q2,syntax_block, URL_without_start_slash + URL_without_start_slash_N - start_q2))
+    {
+        log_msg_debug("not a correct query in the url");
+    }
+
+    return 0;
+
+    
 }
 
 static inline int content_parser(size_t should_skipped_byte,char*req,size_t n,action_syntax_t* syntax_block){
@@ -141,12 +232,18 @@ static inline int content_parser(size_t should_skipped_byte,char*req,size_t n,ac
 
     // key is allowed to encoded to invisiable byte
     alloc_key = malloc(first_whitespace_pos_after_key - key_ptr);
-    if (decode_url(key_ptr, alloc_key, first_whitespace_pos_after_key - key_ptr) == -1)
+    
+    // maybe it is not necessary to deal with error in theres
+    if(url_query_parser(key_ptr,syntax_block,first_whitespace_pos_after_key - key_ptr) == -1)
     {
-        log_msg_debug("decoding url error");
+        log_msg_debug("url query parsing error");
         goto FAIL;
     }
     
+    size_t key_size = decode_url(key_ptr, alloc_key, first_whitespace_pos_after_key - key_ptr) ;
+    
+    alloc_key[key_size] = '\0';
+
     // read real content length from header: Content-Length
     ssize_t Content_Length_header;
     char*CL_end_ptr = Content_Length_in_header(req,n,&Content_Length_header);
@@ -167,9 +264,9 @@ static inline int content_parser(size_t should_skipped_byte,char*req,size_t n,ac
     
     alloc_value = malloc(Content_Length_header);
     memcpy(alloc_value,body_start,Content_Length_header);
-    syntax_block->kw1 = alloc_key;
-    syntax_block->kw2 = alloc_value;
-
+    syntax_block->key = alloc_key;
+    syntax_block->val = alloc_value;
+    
     return 0;
 
     FAIL:
@@ -184,7 +281,6 @@ static inline int content_parser(size_t should_skipped_byte,char*req,size_t n,ac
     return -1;
 
 }
-//TODO:TTL should be support
 static int POST_req_parser_kw(char*req,size_t n,action_syntax_t* syntax_block)
 {
     size_t should_skipped_byte = 6; // skip "POST /"
@@ -221,14 +317,10 @@ static int DELETE_req_parser_kw(char* req,size_t n,action_syntax_t*syntax_block)
 
     // key is allowed to be encoded invisiable byte
     alloc_key = malloc(first_whitespace_pos - key_ptr);
-    if (decode_url(key_ptr, alloc_key, first_whitespace_pos - key_ptr) == -1)
-    {
-        log_msg_debug("decoding url error");
-        goto FAIL;
-    }
-    syntax_block->kw1 = alloc_key;
-    syntax_block->kw2 = NULL;
-
+    size_t key_size = decode_url(key_ptr, alloc_key, first_whitespace_pos - key_ptr) ;
+    alloc_key[key_size] = '\0';
+    syntax_block->key = alloc_key;
+    syntax_block->val = NULL;
     return 0;
 
 FAIL:
@@ -243,7 +335,7 @@ int http_req_parser(uint8_t *req, size_t n, action_syntax_t* syntax_block)
 {
     char *first_whitespace_pos = strchr((const char *)req, ' ');
 
-    if (first_whitespace_pos == NULL)
+    if (first_whitespace_pos == NULL || first_whitespace_pos >= (char*)req + n)
     {
         log_msg_debug("not a correct format");
         goto FAIL;

@@ -1,14 +1,15 @@
 ## My Plan
-- SOCKET and data structure training && programming
-- using LLRBtree to store and search data
-- try to program with moderncpp
-- http request support
+- query
 - try gtest
-- io uring
+- using LLRBtree to store and search data
 - persistence
+- memory snapshort (little CRIU)
 - logs recovery
-- memory snapshort 
-
+- SOCKET and data structure training && programming [done]
+- http request support [done]
+- io uring [done]
+- simple log [done]
+- try to program with moderncpp [not necessary]
 ## action
 **PUT**
 ```

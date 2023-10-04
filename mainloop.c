@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <termios.h>
 
-
+#include "syntax.h"
 #include "sock_module.h"
 #include "parser.h"
 #include "log.h"
@@ -51,9 +51,9 @@ void solver(uint8_t*read_buf,size_t n)
         return;
     }
     
-    char*kw1 = syn.kw1 == NULL ? "NULL" : (char*)syn.kw1;
-    char*kw2 = syn.kw2 == NULL ? "NULL": (char*)syn.kw2;
-    printf("syn: %d\t|kw1: %s\t|kw2: %s\n",syn.action,kw1,kw2);
+    char*kw1 = syn.key == NULL ? "NULL" : (char*)syn.key;
+    char*kw2 = syn.val == NULL ? "NULL": (char*)syn.val;
+    printf("syn: %s\t|k: %s\t|v: %s|type:%s \t|TTL: %ld\n",act_str[syn.action],kw1,kw2,type_str[syn.data_type],syn.TTL);
 
     free_syntax_block_content(&syn);
         
@@ -108,7 +108,7 @@ int main(int argc, char const *argv[])
 
                 int clientfd = cqe->res;
 
-                uint8_t *read_buf = malloc(HEADER_SIZE_LIMIT*sizeof(char) );
+                uint8_t *read_buf = calloc(HEADER_SIZE_LIMIT,sizeof(char) );
                 new_recv_event(&ring, clientfd, read_buf, HEADER_SIZE_LIMIT, 0, process_heap_info);
 
                 // add new accept event to server socket fd
@@ -130,7 +130,7 @@ int main(int argc, char const *argv[])
                 {
 
                     char *write_buf = process_heap_info->data;
-                    log_printf_debug("recv[%d] --> %s\n", cqe->res, write_buf);
+                    log_printf_debug("\nrecv[%d]\n%s\n", cqe->res, write_buf);
                     solver(write_buf,cqe->res);
                     new_send_event(&ring, process_heap_info->sockfd, write_buf, cqe->res, 0, process_heap_info);
                 }
