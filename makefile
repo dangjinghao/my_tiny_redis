@@ -12,6 +12,9 @@ all: $(OBJS)
 	$(CC) $(CFLAGS) -c $< -o $@ $(LDLIBS) 
 
 debug: all
+	gdb ./$(NAME)
+
+run: all
 	./$(NAME)
 
 clean:
