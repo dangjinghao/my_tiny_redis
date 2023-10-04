@@ -1,11 +1,22 @@
 #pragma once
+#include <stdio.h>
+#include <stdint.h>
 extern "C" 
 {
-extern int valid_action(char *s);
-extern int valid_type(char *s);
-extern int AVALIABLE_ACT;
-extern int AVALIABLE_TYPE;
-extern const char *act_str[];
-extern const char *type_str[];
+#include "syntax.h"
+#include "log.h"
+#define COM_INNER_DECL extern
+
+COM_INNER_DECL int valid_action(char *s);
+COM_INNER_DECL int valid_type(char *s);
+
+
+COM_INNER_DECL size_t decode_url(char *url, uint8_t *buf, size_t n);
+COM_INNER_DECL int GET_req_parser_kw(char *req, size_t n, action_syntax_t *syntax_block);
+
+COM_INNER_DECL int GET_req_parser_kw(char *req, size_t n, action_syntax_t *syntax_block);
+
+
+#undef COM_INNER_DECL
 }
 
