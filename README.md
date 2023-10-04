@@ -5,27 +5,30 @@
 - memory snapshort (little CRIU)
 - logs recovery
 - query [done]
+- for invisible byte, using url encode, 0x08 -> %08 [done]
 - SOCKET and data structure training && programming [done]
 - http request support [done]
 - io uring [done]
 - simple log [done]
 - try to program with moderncpp [not necessary]
 ## action
+
 **PUT**
 ```
-POST /[key](?ttl=[secs]) HTTP/x.x\r\n
+PUT /[key](?TTL=[secs?0=ferver]&TYPE=[...]) HTTP/x.x\r\n
 ...(skip those headers)
 Content-Length: [length]\r\n
 ...
 [val]\r\n
 ```
+
 
 **DELETE** 
 ```
 DELETE /[key] HTTP/x.x\r\n
 ```
 
-**MODIFY**
+**MODIFY** (for LIST/SET)
 ```
 POST /[key](?ttl=[secs]) HTTP/x.x\r\n
 ...(skip those headers)
@@ -33,6 +36,8 @@ Content-Length: [length]\r\n
 ...
 [val]\r\n
 ```
+special key(key/advanced_act) for list 
+if adv_act exists,reset ttl
 
 **GET**
 ```
@@ -45,22 +50,40 @@ When using '' or "", don't escape value.
 
 ~~maybe list is not necessary~~
 
-### list (atomic)
+## content type
+    "STRING", ziplist
+    "SET", rbtree store val
+    "LIST", zip/link list
+    <!-- "HASH", -->
 
-**append**
+### STRING
+unnecessary
 
-**lpop**
+### SET
 
-**rpop**
+sadd -> add item
 
-**index**
+> POST /[key]/sadd ...
 
-**llen**
+srm -> ...
+> POST /[key]/srm
+exists
+> POST /[key]/exists ... [val]
 
-****
+GET -> all members
+### LIST
+all POST
 
-~~a little restful style~~
+lpop
 
-for invisible byte, using url encode, 0x08 -> %08
+rpop
 
-You cannot include spcial URL char directly(%#&=).Instead, encode them.
+key/insert/idx
+
+key/idx_get/idx
+
+llen
+
+
+
+

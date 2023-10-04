@@ -12,7 +12,7 @@
 #include "sock_module.h"
 #include "parser.h"
 #include "log.h"
-COM_INNER_DECL const size_t HEADER_SIZE_LIMIT = 10 * 1024; // put or post
+COM_INNER_DECL const size_t HEADER_SIZE_LIMIT = 2 * 1024; // put or post
 COM_INNER_DECL const unsigned int ENTRIES_SIZE = 1024;
 
 COM_INNER_DECL struct io_uring ring;
@@ -132,10 +132,10 @@ int main(int argc, char const *argv[])
                 else
                 {
 
-                    char *write_buf = process_heap_info->data;
-                    log_printf_debug("\nrecv[%d]\n%s\n", cqe->res, write_buf);
-                    solver(write_buf, cqe->res);
-                    new_send_event(&ring, process_heap_info->sockfd, write_buf, cqe->res, 0, process_heap_info);
+                    char *read_buf = process_heap_info->data;
+                    log_printf_debug("\nrecv[%d]\n%s\n", cqe->res, read_buf);
+                    solver(read_buf, cqe->res);
+                    new_send_event(&ring, process_heap_info->sockfd, read_buf, cqe->res, 0, process_heap_info);
                 }
             }
             else if (process_heap_info->evtype == EV_WRITE_DONE)

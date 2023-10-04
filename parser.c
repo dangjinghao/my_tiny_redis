@@ -19,12 +19,11 @@ const char *act_str[] = {
 
 const char *type_str[] = {
     "STRING",
-    "INT",
-    "COUNT",
-    "FLOAT",
+    "SET",
+    "LIST",
 };
 
-const size_t AVALIABLE_TYPE = 4;
+const size_t AVALIABLE_TYPE = 3;
 
 COM_INNER_DECL int valid_action(char *s)
 {
@@ -199,7 +198,8 @@ COM_INNER_DECL int url_query_parser(char *URL_without_start_slash, action_syntax
     char *start_query = strchr(URL_without_start_slash, '?');
     if (start_query == NULL || start_query - URL_without_start_slash >= URL_without_start_slash_N)
     {
-        return -1;
+        log_msg_debug("cannot find ?");
+        return -2;
     }
 
     start_query += 1;
@@ -207,7 +207,8 @@ COM_INNER_DECL int url_query_parser(char *URL_without_start_slash, action_syntax
 
     if (end_q1 == NULL || end_q1 - URL_without_start_slash >= URL_without_start_slash_N)
     {
-        return -1;
+        log_msg_debug("cannot find &");
+        end_q1 = URL_without_start_slash + URL_without_start_slash_N;
     }
 
     syntax_block->TTL = 0;
@@ -218,6 +219,11 @@ COM_INNER_DECL int url_query_parser(char *URL_without_start_slash, action_syntax
         log_msg_debug("not a correct query in the url");
     }
 
+    if(end_q1 == URL_without_start_slash + URL_without_start_slash_N)
+    {
+        log_msg_debug("only one query");
+        return 0;
+    }
     char *start_q2 = end_q1 + 1;
 
     if (-1 == url_query_kv_part(start_q2, syntax_block, URL_without_start_slash + URL_without_start_slash_N - start_q2))
@@ -226,6 +232,14 @@ COM_INNER_DECL int url_query_parser(char *URL_without_start_slash, action_syntax
     }
 
     return 0;
+}
+
+
+// TODO: for list/set
+// TODO:gtest
+COM_INNER_DECL int advanced_operator()
+{
+
 }
 
 // TODO:gtest
@@ -252,13 +266,20 @@ COM_INNER_DECL int content_parser(size_t should_skipped_byte, char *req, size_t 
     // key is allowed to encoded to invisiable byte
     alloc_key = malloc(first_whitespace_pos_after_key - key_ptr);
 
-    // maybe it is not necessary to deal with error in theres
-    if (url_query_parser(key_ptr, syntax_block, first_whitespace_pos_after_key - key_ptr) == -1)
+    int url_query_parser_rel = url_query_parser(key_ptr, syntax_block, first_whitespace_pos_after_key - key_ptr);
+    if (url_query_parser_rel == -1)
     {
         log_msg_debug("url query parsing error");
         goto FAIL;
     }
-
+    else if(url_query_parser_rel == -2)
+    {
+        log_msg_debug("no query,use default query");
+        syntax_block->data_type = 0;
+        syntax_block->TTL = 0;
+    }
+    
+    // TODO:write adv opt before here
     size_t key_size = decode_url(key_ptr, alloc_key, first_whitespace_pos_after_key - key_ptr);
 
     alloc_key[key_size] = '\0';
@@ -299,13 +320,13 @@ FAIL:
     }
     return -1;
 }
-COM_INNER_DECL int POST_req_parser_kw(char *req, size_t n, action_syntax_t *syntax_block)
+static inline int POST_req_parser_kw(char *req, size_t n, action_syntax_t *syntax_block)
 {
     size_t should_skipped_byte = 6; // skip "POST /"
     return content_parser(should_skipped_byte, req, n, syntax_block);
 }
 
-COM_INNER_DECL int PUT_req_parser_kw(char *req, size_t n, action_syntax_t *syntax_block)
+static inline int PUT_req_parser_kw(char *req, size_t n, action_syntax_t *syntax_block)
 {
     size_t should_skipped_byte = 5; // skip "PUT /"
     return content_parser(should_skipped_byte, req, n, syntax_block);

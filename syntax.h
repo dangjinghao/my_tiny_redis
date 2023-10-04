@@ -23,13 +23,26 @@ typedef enum
     sdt_FLOAT, //double 
 } syntax_data_type;
 
+typedef enum
+{
+    ao_sadd,
+    ao_srm,
+    ao_sexists,
+    ao_llpush,
+    ao_lrpush,
+    ao_lidxins,
+    ao_lidxget,
+    ao_lidxrm,
+    ao_lidxmod,
+}adv_opt_type;
 typedef struct action_syntax
 {
     syntax_action_type action;
     uint8_t* key;
     uint8_t* val;
     syntax_data_type data_type;
-    int64_t TTL; //if ttl is 0,it is forever
+    int64_t TTL; //0 is forever
+    adv_opt_type adv_opt;
 } action_syntax_t;
 
 #endif
