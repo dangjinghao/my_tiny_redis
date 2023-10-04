@@ -1,4 +1,3 @@
-#include "sock_module.h"
 #include <liburing.h>
 #include <netinet/in.h>
 #include <stdbool.h>
@@ -6,7 +5,13 @@
 #include <stdio.h>
 #include <strings.h>
 #include <unistd.h>
+#include <termios.h>
 
+
+#include "sock_module.h"
+#include "parser.h"
+#include "log.h"
+static const size_t HEADER_SIZE_LIMIT = 10 * 1024; // put or post 
 static const unsigned int ENTRIES_SIZE = 1024;
 
 static struct io_uring ring;
@@ -18,13 +23,55 @@ static void sig_intp_handler(int signo)
         puts("bye!\n");
         io_uring_close_ring_fd(&ring);
         close(serverfd);
-        exit(0);
+        exit(EXIT_SUCCESS);
+    }
+}
+
+void disable_ctrl_c_output() {
+    struct termios term;
+    if (tcgetattr(STDIN_FILENO, &term) < 0) {
+        perror("tcgetattr");
+        exit(EXIT_FAILURE);
+    }
+
+    term.c_lflag &= ~ECHOCTL;
+
+    if (tcsetattr(STDIN_FILENO, TCSANOW, &term) < 0) {
+        perror("tcsetattr");
+        exit(EXIT_FAILURE);
     }
 }
 
 
+void solver(uint8_t*read_buf,size_t n)
+{
+    action_syntax_t syn;
+    if(http_req_parser(read_buf,n,&syn) == -1)
+    {
+        return;
+    }
+    
+    char*kw1 = syn.kw1 == NULL ? "NULL" : (char*)syn.kw1;
+    char*kw2 = syn.kw2 == NULL ? "NULL": (char*)syn.kw2;
+    printf("syn: %d\t|kw1: %s\t|kw2: %s\n",syn.action,kw1,kw2);
+
+    free_syntax_block_content(&syn);
+        
+}
+
 int main(int argc, char const *argv[])
 {
+    int port = 8000;
+    if(argc == 1)
+    {
+        printf("Using default port: %d\n",port);
+    }
+    else if(argc == 2)
+    {
+        port = atoi(argv[1]);
+    }
+    set_log_level(LOG_DEBUG);
+    disable_ctrl_c_output();
     serverfd = init_sock(8000);
 
     struct io_uring_params params = {0};
@@ -61,8 +108,8 @@ int main(int argc, char const *argv[])
 
                 int clientfd = cqe->res;
 
-                uint8_t *read_buf = malloc(sizeof(char) * 10240);
-                new_recv_event(&ring, clientfd, read_buf, 10240, 0, process_heap_info);
+                uint8_t *read_buf = malloc(HEADER_SIZE_LIMIT*sizeof(char) );
+                new_recv_event(&ring, clientfd, read_buf, HEADER_SIZE_LIMIT, 0, process_heap_info);
 
                 // add new accept event to server socket fd
                 struct connect_info *next_accpet_info = malloc(sizeof(struct connect_info *));
@@ -83,7 +130,8 @@ int main(int argc, char const *argv[])
                 {
 
                     char *write_buf = process_heap_info->data;
-                    printf("recv[%d] --> %s\n", cqe->res, write_buf);
+                    log_printf_debug("recv[%d] --> %s\n", cqe->res, write_buf);
+                    solver(write_buf,cqe->res);
                     new_send_event(&ring, process_heap_info->sockfd, write_buf, cqe->res, 0, process_heap_info);
                 }
             }
