@@ -1,9 +1,21 @@
 #include "syntax.h"
+#include "log.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
 #include <sys/types.h>
+
+const size_t AVALIABLE_ACT = 4;
+
+const char* act_str[] = {
+    "POST",
+    "DELETE",
+    "PUT",
+    "GET"
+};
+
+
 static int valid_action(char *s)
 {
     for (size_t i = 0; i < AVALIABLE_ACT; i++)
@@ -55,7 +67,11 @@ static int GET_req_parser_kw(char *req, size_t n, action_syntax_t *syntax_block)
     size_t should_skipped_byte = 5; // skip "GET /"
     uint8_t *alloc_key = NULL;
     if (n <= should_skipped_byte)
+    {
+        log_msg_debug("request body is too short");
         goto FAIL;
+
+    }
 
     char *key_ptr = req + should_skipped_byte;
 
@@ -63,6 +79,7 @@ static int GET_req_parser_kw(char *req, size_t n, action_syntax_t *syntax_block)
 
     if (first_whitespace_pos == NULL)
     {
+        log_msg_debug("wrong format request");
         goto FAIL;
     }
 
@@ -70,6 +87,7 @@ static int GET_req_parser_kw(char *req, size_t n, action_syntax_t *syntax_block)
     alloc_key = malloc(first_whitespace_pos - key_ptr);
     if (decode_url(key_ptr, alloc_key, first_whitespace_pos - key_ptr) == -1)
     {
+        log_msg_debug("decoding url error");
         goto FAIL;
     }
     syntax_block->kw1 = alloc_key;
@@ -85,13 +103,13 @@ FAIL:
     return -1;
 }
 
-static char* Content_Length_in_header(char*req,size_t n,ssize_t*num){
+static char* Content_Length_in_header(char*req,size_t n,size_t*num){
     char* content_length_pos = strstr(req,"Content-Length: ");
     if(content_length_pos == NULL) goto FAIL;
     content_length_pos += 16;
     char*end_CRLF = strstr(content_length_pos,"\r\n");
     if(end_CRLF == NULL) goto FAIL;
-    *num = strtoul(content_length_pos,end_CRLF,10);
+    *num = strtoul(content_length_pos,&end_CRLF,10);
 
     if(num == 0) goto FAIL;
 
@@ -105,7 +123,11 @@ static inline int content_parser(size_t should_skipped_byte,char*req,size_t n,ac
     uint8_t *alloc_key = NULL;
     uint8_t *alloc_value = NULL;
     if (n <= should_skipped_byte)
+    {
+        log_msg_debug("request body is too short");
         goto FAIL;
+
+    }
 
     char *key_ptr = req + should_skipped_byte;
 
@@ -113,6 +135,7 @@ static inline int content_parser(size_t should_skipped_byte,char*req,size_t n,ac
 
     if (first_whitespace_pos_after_key == NULL)
     {
+        log_msg_debug("wrong format request");
         goto FAIL;
     }
 
@@ -120,29 +143,30 @@ static inline int content_parser(size_t should_skipped_byte,char*req,size_t n,ac
     alloc_key = malloc(first_whitespace_pos_after_key - key_ptr);
     if (decode_url(key_ptr, alloc_key, first_whitespace_pos_after_key - key_ptr) == -1)
     {
+        log_msg_debug("decoding url error");
         goto FAIL;
     }
     
     // read real content length from header: Content-Length
     ssize_t Content_Length_header;
-    char*newptr = Content_Length_in_header(req,n,&Content_Length_header);
+    char*CL_end_ptr = Content_Length_in_header(req,n,&Content_Length_header);
+    if(CL_end_ptr == NULL)
+    {
+        log_msg_debug("cannot found content length in header");
+        goto FAIL;
+    }
     
-    char*double_CRLF = strstr(newptr,"\r\n\r\n");
+    char*double_CRLF = strstr(CL_end_ptr,"\r\n\r\n");
     if(double_CRLF == NULL){
+        log_msg_debug("cannot found header/body split");
         goto FAIL;
     }
 
-    if(Content_Length_header == -1) goto FAIL;
 
     char*body_start = double_CRLF + 4;// skip \\r\\n\\r\\n
-    size_t real_content_length = n - (req - body_start);
-    if(Content_Length_header != real_content_length)
-    {
-        goto FAIL;
-    }
     
-    alloc_value = malloc(real_content_length);
-    memcpy(alloc_value,body_start,real_content_length);
+    alloc_value = malloc(Content_Length_header);
+    memcpy(alloc_value,body_start,Content_Length_header);
     syntax_block->kw1 = alloc_key;
     syntax_block->kw2 = alloc_value;
 
@@ -179,7 +203,11 @@ static int DELETE_req_parser_kw(char* req,size_t n,action_syntax_t*syntax_block)
     size_t should_skipped_byte = 8; // skip "DELETE /"
     uint8_t *alloc_key = NULL;
     if (n <= should_skipped_byte)
+    {
+        log_msg_debug("request body is too short");
         goto FAIL;
+
+    }
 
     char *key_ptr = req + should_skipped_byte;
 
@@ -187,6 +215,7 @@ static int DELETE_req_parser_kw(char* req,size_t n,action_syntax_t*syntax_block)
 
     if (first_whitespace_pos == NULL)
     {
+        log_msg_debug("wrong format request");
         goto FAIL;
     }
 
@@ -194,6 +223,7 @@ static int DELETE_req_parser_kw(char* req,size_t n,action_syntax_t*syntax_block)
     alloc_key = malloc(first_whitespace_pos - key_ptr);
     if (decode_url(key_ptr, alloc_key, first_whitespace_pos - key_ptr) == -1)
     {
+        log_msg_debug("decoding url error");
         goto FAIL;
     }
     syntax_block->kw1 = alloc_key;
@@ -209,13 +239,13 @@ FAIL:
     return -1;
 }
 
-int http_req_parser(uint8_t *req, size_t n, action_syntax_t syntax_block)
+int http_req_parser(uint8_t *req, size_t n, action_syntax_t* syntax_block)
 {
     char *first_whitespace_pos = strchr((const char *)req, ' ');
 
     if (first_whitespace_pos == NULL)
     {
-        // not a correct format
+        log_msg_debug("not a correct format");
         goto FAIL;
     }
 
@@ -226,36 +256,37 @@ int http_req_parser(uint8_t *req, size_t n, action_syntax_t syntax_block)
             cpy_len);
 
     int act_type = valid_action(act);
-    // not a correct action
+    
     if (act_type == -1)
     {
+        log_msg_debug("not a correct action");
         goto FAIL;
     }
 
-    syntax_block.action = act_type;
+    syntax_block->action = act_type;
 
-    switch (syntax_block.action)
+    switch (syntax_block->action)
     {
     case sat_GET:
-        if (GET_req_parser_kw(req, n, &syntax_block) == -1)
+        if (GET_req_parser_kw(req, n, syntax_block) == -1)
         {
             goto FAIL;
         }
         break;
     case sat_CREATE:
-        if(POST_req_parser_kw(req,n,&syntax_block) == -1) 
+        if(POST_req_parser_kw(req,n,syntax_block) == -1) 
         {
             goto FAIL;
         }
         break;
     case sat_DELETE:
-        if(DELETE_req_parser_kw(req,n,&syntax_block) == -1)
+        if(DELETE_req_parser_kw(req,n,syntax_block) == -1)
         {
             goto FAIL;
         }
         break;
     case sat_UPDATE:
-        if(PUT_req_parser_kw(req,n,&syntax_block) == -1)
+        if(PUT_req_parser_kw(req,n,syntax_block) == -1)
         {
             goto FAIL;
         }
