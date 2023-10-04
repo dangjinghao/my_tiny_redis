@@ -1,3 +1,5 @@
+#include "test_common.h"
+
 #include <stdio.h>
 #include <netinet/in.h>
 #include <string.h>

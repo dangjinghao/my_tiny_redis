@@ -1,3 +1,4 @@
+#include "test_common.h"
 #include <liburing.h>
 #include <netinet/in.h>
 #include <stdbool.h>
@@ -11,12 +12,12 @@
 #include "sock_module.h"
 #include "parser.h"
 #include "log.h"
-static const size_t HEADER_SIZE_LIMIT = 10 * 1024; // put or post 
-static const unsigned int ENTRIES_SIZE = 1024;
+STATIC const size_t HEADER_SIZE_LIMIT = 10 * 1024; // put or post
+STATIC const unsigned int ENTRIES_SIZE = 1024;
 
-static struct io_uring ring;
-static int serverfd;
-static void sig_intp_handler(int signo)
+STATIC struct io_uring ring;
+STATIC int serverfd;
+STATIC void sig_intp_handler(int signo)
 {
     if (signo == SIGINT)
     {
@@ -27,46 +28,48 @@ static void sig_intp_handler(int signo)
     }
 }
 
-void disable_ctrl_c_output() {
+void disable_ctrl_c_output()
+{
     struct termios term;
-    if (tcgetattr(STDIN_FILENO, &term) < 0) {
+    if (tcgetattr(STDIN_FILENO, &term) < 0)
+    {
         perror("tcgetattr");
         exit(EXIT_FAILURE);
     }
 
     term.c_lflag &= ~ECHOCTL;
 
-    if (tcsetattr(STDIN_FILENO, TCSANOW, &term) < 0) {
+    if (tcsetattr(STDIN_FILENO, TCSANOW, &term) < 0)
+    {
         perror("tcsetattr");
         exit(EXIT_FAILURE);
     }
 }
-
-
-void solver(uint8_t*read_buf,size_t n)
+//TODO:gtest
+void solver(uint8_t *read_buf, size_t n)
 {
     action_syntax_t syn;
-    if(http_req_parser(read_buf,n,&syn) == -1)
+    if (http_req_parser(read_buf, n, &syn) == -1)
     {
         return;
     }
-    
-    char*kw1 = syn.key == NULL ? "NULL" : (char*)syn.key;
-    char*kw2 = syn.val == NULL ? "NULL": (char*)syn.val;
-    printf("syn: %s\t|k: %s\t|v: %s|type:%s \t|TTL: %ld\n",act_str[syn.action],kw1,kw2,type_str[syn.data_type],syn.TTL);
+
+    char *kw1 = syn.key == NULL ? "NULL" : (char *)syn.key;
+    char *kw2 = syn.val == NULL ? "NULL" : (char *)syn.val;
+    printf("syn: %s\t|k: %s\t|v: %s|type:%s \t|TTL: %ld\n", act_str[syn.action], kw1, kw2, type_str[syn.data_type], syn.TTL);
 
     free_syntax_block_content(&syn);
-        
 }
 
+#ifndef TEST
 int main(int argc, char const *argv[])
 {
     int port = 8000;
-    if(argc == 1)
+    if (argc == 1)
     {
-        printf("Using default port: %d\n",port);
+        printf("Using default port: %d\n", port);
     }
-    else if(argc == 2)
+    else if (argc == 2)
     {
         port = atoi(argv[1]);
     }
@@ -108,7 +111,7 @@ int main(int argc, char const *argv[])
 
                 int clientfd = cqe->res;
 
-                uint8_t *read_buf = calloc(HEADER_SIZE_LIMIT,sizeof(char) );
+                uint8_t *read_buf = calloc(HEADER_SIZE_LIMIT, sizeof(char));
                 new_recv_event(&ring, clientfd, read_buf, HEADER_SIZE_LIMIT, 0, process_heap_info);
 
                 // add new accept event to server socket fd
@@ -131,7 +134,7 @@ int main(int argc, char const *argv[])
 
                     char *write_buf = process_heap_info->data;
                     log_printf_debug("\nrecv[%d]\n%s\n", cqe->res, write_buf);
-                    solver(write_buf,cqe->res);
+                    solver(write_buf, cqe->res);
                     new_send_event(&ring, process_heap_info->sockfd, write_buf, cqe->res, 0, process_heap_info);
                 }
             }
@@ -147,3 +150,5 @@ int main(int argc, char const *argv[])
     }
     return 0;
 }
+
+#endif

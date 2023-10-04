@@ -1,3 +1,4 @@
+#include "test_common.h"
 #include "syntax.h"
 #include "log.h"
 #include <stdint.h>
@@ -8,25 +9,25 @@
 
 const size_t AVALIABLE_ACT = 4;
 
-const char* act_str[] = {
+const char *act_str[] = {
     "POST",
     "DELETE",
     "PUT",
-    "GET"
+    "GET",
 };
 
-const char* type_str[] = {
+const char *type_str[] = {
     "STRING",
-    "INT", 
-    "COUNT", 
-    "FLOAT",  
-
+    "INT",
+    "COUNT",
+    "FLOAT",
 };
 
 const size_t AVALIABLE_TYPE = 4;
 
-static int valid_action(char *s)
+STATIC int valid_action(char *s)
 {
+    if(s == NULL) return -1;
     for (size_t i = 0; i < AVALIABLE_ACT; i++)
     {
         if (strcmp(act_str[i], s) == 0)
@@ -35,8 +36,9 @@ static int valid_action(char *s)
     return -1;
 }
 
-static int valid_type(char *s)
+STATIC int valid_type(char *s)
 {
+    if(s == NULL) return -1;
     for (size_t i = 0; i < AVALIABLE_TYPE; i++)
     {
         if (strcmp(type_str[i], s) == 0)
@@ -45,8 +47,8 @@ static int valid_type(char *s)
     return -1;
 }
 
-
-static size_t decode_url(char *url, uint8_t *buf, size_t n)
+//TODO:gtest
+STATIC size_t decode_url(char *url, uint8_t *buf, size_t n)
 {
     size_t i = 0, j = 0;
     size_t key_size = n;
@@ -60,13 +62,13 @@ static size_t decode_url(char *url, uint8_t *buf, size_t n)
 
             buf[j] = onebyte;
             i += 2;
-        }    
+        }
         else
         {
             buf[j] = url[i];
             if (url[i] == '?')
             {
-                key_size = j; 
+                key_size = j;
             }
         }
 
@@ -79,15 +81,18 @@ static size_t decode_url(char *url, uint8_t *buf, size_t n)
 
 void free_syntax_block_content(action_syntax_t *syntax_block)
 {
-    if(syntax_block->key!=NULL){
+    if (syntax_block->key != NULL)
+    {
         free(syntax_block->key);
     }
-    if(syntax_block->val!=NULL){
+    if (syntax_block->val != NULL)
+    {
         free(syntax_block->val);
     }
-    
 }
-static int GET_req_parser_kw(char *req, size_t n, action_syntax_t *syntax_block)
+
+//TODO:gtest
+STATIC int GET_req_parser_kw(char *req, size_t n, action_syntax_t *syntax_block)
 {
     size_t should_skipped_byte = 5; // skip "GET /"
     uint8_t *alloc_key = NULL;
@@ -95,7 +100,6 @@ static int GET_req_parser_kw(char *req, size_t n, action_syntax_t *syntax_block)
     {
         log_msg_debug("request body is too short");
         goto FAIL;
-
     }
 
     char *key_ptr = req + should_skipped_byte;
@@ -125,99 +129,102 @@ FAIL:
     return -1;
 }
 
-static char* Content_Length_in_header(char*req,size_t n,size_t*num){
-    char* content_length_pos = strstr(req,"Content-Length: ");
-    if(content_length_pos == NULL || content_length_pos - req + 16 >= n) goto FAIL; // maybe there are not vaild infomation in n range
+
+//TODO:gtest
+STATIC char *Content_Length_in_header(char *req, size_t n, size_t *num)
+{
+    char *content_length_pos = strstr(req, "Content-Length: ");
+    if (content_length_pos == NULL || content_length_pos - req + 16 >= n)
+        goto FAIL; // maybe there are not vaild infomation in n range
 
     content_length_pos += 16;
-    char*end_CRLF = strstr(content_length_pos,"\r\n");
-    if(end_CRLF == NULL || end_CRLF - req >= n) goto FAIL;
-    
-    *num = strtoul(content_length_pos,&end_CRLF,10);
+    char *end_CRLF = strstr(content_length_pos, "\r\n");
+    if (end_CRLF == NULL || end_CRLF - req >= n)
+        goto FAIL;
 
-    if(num == 0) goto FAIL;
+    *num = strtoul(content_length_pos, &end_CRLF, 10);
+
+    if (num == 0)
+        goto FAIL;
 
     return end_CRLF;
-    
+
 FAIL:
     return NULL;
 }
 
-static int url_query_kv_part(char*s,action_syntax_t* syntax_block,size_t n)
+//TODO:gtest
+STATIC int url_query_kv_part(char *s, action_syntax_t *syntax_block, size_t n)
 {
     char buf[128] = {0};
-    char*key_end = strchr(s,'=');
-    if(key_end == NULL|| key_end - s >= n)
+    char *key_end = strchr(s, '=');
+    if (key_end == NULL || key_end - s >= n)
     {
         return -1;
     }
-    
-    if(strncmp("TTL",s,3) == 0)
+
+    if (strncmp("TTL", s, 3) == 0)
     {
-        strncpy(buf,key_end + 1,n - (key_end + 1 - s));
-        syntax_block->TTL = atol(buf); 
+        strncpy(buf, key_end + 1, n - (key_end + 1 - s));
+        syntax_block->TTL = atol(buf);
     }
-    else if(strncmp("TYPE",s,4) == 0)
+    else if (strncmp("TYPE", s, 4) == 0)
     {
-        strncpy(buf,key_end + 1,n - (key_end + 1 - s));
-        int current_type = valid_type(buf);    
-        if(current_type == -1) return -1;
+        strncpy(buf, key_end + 1, n - (key_end + 1 - s));
+        int current_type = valid_type(buf);
+        if (current_type == -1)
+            return -1;
 
         syntax_block->data_type = current_type;
     }
 
-
-
     return 0;
 }
 
-// TODO:url_query_parser,only modify data_type and TTL
-static int url_query_parser(char*URL_without_start_slash,action_syntax_t* syntax_block,size_t URL_without_start_slash_N)
+//TODO:gtest
+STATIC int url_query_parser(char *URL_without_start_slash, action_syntax_t *syntax_block, size_t URL_without_start_slash_N)
 {
-    char*start_query = strchr(URL_without_start_slash,'?');
-    if(start_query == NULL || start_query - URL_without_start_slash >= URL_without_start_slash_N)
+    char *start_query = strchr(URL_without_start_slash, '?');
+    if (start_query == NULL || start_query - URL_without_start_slash >= URL_without_start_slash_N)
     {
-        return -1;  
+        return -1;
     }
 
-    start_query +=1;
-    char*end_q1 = strchr(start_query,'&');
+    start_query += 1;
+    char *end_q1 = strchr(start_query, '&');
 
-    if(end_q1 == NULL || end_q1 - URL_without_start_slash >= URL_without_start_slash_N)
+    if (end_q1 == NULL || end_q1 - URL_without_start_slash >= URL_without_start_slash_N)
     {
-        return -1;  
+        return -1;
     }
-
 
     syntax_block->TTL = 0;
     syntax_block->data_type = 0;
 
-    
-    if(-1 ==url_query_kv_part(start_query,syntax_block,end_q1 - start_query))
+    if (-1 == url_query_kv_part(start_query, syntax_block, end_q1 - start_query))
     {
         log_msg_debug("not a correct query in the url");
     }
-    
-    char*start_q2 = end_q1 +1;
 
-    if( -1 ==url_query_kv_part(start_q2,syntax_block, URL_without_start_slash + URL_without_start_slash_N - start_q2))
+    char *start_q2 = end_q1 + 1;
+
+    if (-1 == url_query_kv_part(start_q2, syntax_block, URL_without_start_slash + URL_without_start_slash_N - start_q2))
     {
         log_msg_debug("not a correct query in the url");
     }
 
     return 0;
-
-    
 }
 
-static inline int content_parser(size_t should_skipped_byte,char*req,size_t n,action_syntax_t* syntax_block){
+//TODO:gtest
+STATIC int content_parser(size_t should_skipped_byte, char *req, size_t n, action_syntax_t *syntax_block)
+{
     uint8_t *alloc_key = NULL;
     uint8_t *alloc_value = NULL;
     if (n <= should_skipped_byte)
     {
         log_msg_debug("request body is too short");
         goto FAIL;
-
     }
 
     char *key_ptr = req + should_skipped_byte;
@@ -232,69 +239,68 @@ static inline int content_parser(size_t should_skipped_byte,char*req,size_t n,ac
 
     // key is allowed to encoded to invisiable byte
     alloc_key = malloc(first_whitespace_pos_after_key - key_ptr);
-    
+
     // maybe it is not necessary to deal with error in theres
-    if(url_query_parser(key_ptr,syntax_block,first_whitespace_pos_after_key - key_ptr) == -1)
+    if (url_query_parser(key_ptr, syntax_block, first_whitespace_pos_after_key - key_ptr) == -1)
     {
         log_msg_debug("url query parsing error");
         goto FAIL;
     }
-    
-    size_t key_size = decode_url(key_ptr, alloc_key, first_whitespace_pos_after_key - key_ptr) ;
-    
+
+    size_t key_size = decode_url(key_ptr, alloc_key, first_whitespace_pos_after_key - key_ptr);
+
     alloc_key[key_size] = '\0';
 
     // read real content length from header: Content-Length
     ssize_t Content_Length_header;
-    char*CL_end_ptr = Content_Length_in_header(req,n,&Content_Length_header);
-    if(CL_end_ptr == NULL)
+    char *CL_end_ptr = Content_Length_in_header(req, n, &Content_Length_header);
+    if (CL_end_ptr == NULL)
     {
         log_msg_debug("cannot found content length in header");
         goto FAIL;
     }
-    
-    char*double_CRLF = strstr(CL_end_ptr,"\r\n\r\n");
-    if(double_CRLF == NULL){
+
+    char *double_CRLF = strstr(CL_end_ptr, "\r\n\r\n");
+    if (double_CRLF == NULL)
+    {
         log_msg_debug("cannot found header/body split");
         goto FAIL;
     }
 
+    char *body_start = double_CRLF + 4; // skip \\r\\n\\r\\n
 
-    char*body_start = double_CRLF + 4;// skip \\r\\n\\r\\n
-    
     alloc_value = malloc(Content_Length_header);
-    memcpy(alloc_value,body_start,Content_Length_header);
+    memcpy(alloc_value, body_start, Content_Length_header);
     syntax_block->key = alloc_key;
     syntax_block->val = alloc_value;
-    
+
     return 0;
 
-    FAIL:
+FAIL:
     if (alloc_key != NULL)
     {
         free(alloc_key);
     }
-    if(alloc_value != NULL)
+    if (alloc_value != NULL)
     {
         free(alloc_value);
     }
     return -1;
-
 }
-static int POST_req_parser_kw(char*req,size_t n,action_syntax_t* syntax_block)
+STATIC int POST_req_parser_kw(char *req, size_t n, action_syntax_t *syntax_block)
 {
     size_t should_skipped_byte = 6; // skip "POST /"
-    return content_parser(should_skipped_byte,req,n,syntax_block);
+    return content_parser(should_skipped_byte, req, n, syntax_block);
 }
 
-static int PUT_req_parser_kw(char*req,size_t n,action_syntax_t* syntax_block)
+STATIC int PUT_req_parser_kw(char *req, size_t n, action_syntax_t *syntax_block)
 {
     size_t should_skipped_byte = 5; // skip "PUT /"
-    return content_parser(should_skipped_byte,req,n,syntax_block);
+    return content_parser(should_skipped_byte, req, n, syntax_block);
 }
 
-
-static int DELETE_req_parser_kw(char* req,size_t n,action_syntax_t*syntax_block)
+//TODO:gtest
+STATIC int DELETE_req_parser_kw(char *req, size_t n, action_syntax_t *syntax_block)
 {
     size_t should_skipped_byte = 8; // skip "DELETE /"
     uint8_t *alloc_key = NULL;
@@ -302,7 +308,6 @@ static int DELETE_req_parser_kw(char* req,size_t n,action_syntax_t*syntax_block)
     {
         log_msg_debug("request body is too short");
         goto FAIL;
-
     }
 
     char *key_ptr = req + should_skipped_byte;
@@ -317,7 +322,7 @@ static int DELETE_req_parser_kw(char* req,size_t n,action_syntax_t*syntax_block)
 
     // key is allowed to be encoded invisiable byte
     alloc_key = malloc(first_whitespace_pos - key_ptr);
-    size_t key_size = decode_url(key_ptr, alloc_key, first_whitespace_pos - key_ptr) ;
+    size_t key_size = decode_url(key_ptr, alloc_key, first_whitespace_pos - key_ptr);
     alloc_key[key_size] = '\0';
     syntax_block->key = alloc_key;
     syntax_block->val = NULL;
@@ -331,11 +336,12 @@ FAIL:
     return -1;
 }
 
-int http_req_parser(uint8_t *req, size_t n, action_syntax_t* syntax_block)
+//TODO:gtest
+int http_req_parser(uint8_t *req, size_t n, action_syntax_t *syntax_block)
 {
     char *first_whitespace_pos = strchr((const char *)req, ' ');
 
-    if (first_whitespace_pos == NULL || first_whitespace_pos >= (char*)req + n)
+    if (first_whitespace_pos == NULL || first_whitespace_pos >= (char *)req + n)
     {
         log_msg_debug("not a correct format");
         goto FAIL;
@@ -348,7 +354,7 @@ int http_req_parser(uint8_t *req, size_t n, action_syntax_t* syntax_block)
             cpy_len);
 
     int act_type = valid_action(act);
-    
+
     if (act_type == -1)
     {
         log_msg_debug("not a correct action");
@@ -366,19 +372,19 @@ int http_req_parser(uint8_t *req, size_t n, action_syntax_t* syntax_block)
         }
         break;
     case sat_CREATE:
-        if(POST_req_parser_kw(req,n,syntax_block) == -1) 
+        if (POST_req_parser_kw(req, n, syntax_block) == -1)
         {
             goto FAIL;
         }
         break;
     case sat_DELETE:
-        if(DELETE_req_parser_kw(req,n,syntax_block) == -1)
+        if (DELETE_req_parser_kw(req, n, syntax_block) == -1)
         {
             goto FAIL;
         }
         break;
     case sat_UPDATE:
-        if(PUT_req_parser_kw(req,n,syntax_block) == -1)
+        if (PUT_req_parser_kw(req, n, syntax_block) == -1)
         {
             goto FAIL;
         }

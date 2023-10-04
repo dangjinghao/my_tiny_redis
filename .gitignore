@@ -1,0 +1,10 @@
+*
+!.gitignore
+!*.c
+!*.h
+!*.md
+!makefile
+!*.cpp
+!test
+!release
+!debug
