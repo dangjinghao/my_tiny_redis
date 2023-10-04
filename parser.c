@@ -6,7 +6,8 @@
 #include <string.h>
 #include <assert.h>
 #include <sys/types.h>
-
+#include <ctype.h>
+#include <strings.h>
 const size_t AVALIABLE_ACT = 4;
 
 const char *act_str[] = {
@@ -25,9 +26,10 @@ const char *type_str[] = {
 
 const size_t AVALIABLE_TYPE = 4;
 
-STATIC int valid_action(char *s)
+COM_INNER_DECL int valid_action(char *s)
 {
-    if(s == NULL) return -1;
+    if (s == NULL)
+        return -1;
     for (size_t i = 0; i < AVALIABLE_ACT; i++)
     {
         if (strcmp(act_str[i], s) == 0)
@@ -36,9 +38,10 @@ STATIC int valid_action(char *s)
     return -1;
 }
 
-STATIC int valid_type(char *s)
+COM_INNER_DECL int valid_type(char *s)
 {
-    if(s == NULL) return -1;
+    if (s == NULL)
+        return -1;
     for (size_t i = 0; i < AVALIABLE_TYPE; i++)
     {
         if (strcmp(type_str[i], s) == 0)
@@ -47,8 +50,8 @@ STATIC int valid_type(char *s)
     return -1;
 }
 
-//TODO:gtest
-STATIC size_t decode_url(char *url, uint8_t *buf, size_t n)
+
+COM_INNER_DECL size_t decode_url(char *url, uint8_t *buf, size_t n)
 {
     size_t i = 0, j = 0;
     size_t key_size = n;
@@ -58,8 +61,11 @@ STATIC size_t decode_url(char *url, uint8_t *buf, size_t n)
         {
             if (i + 2 >= n)
                 return -1; // wrong decode url format
-            uint8_t onebyte = url[i + 1] * 16 + url[i + 2];
 
+            char hexchars[3] = {0};
+            strncpy(hexchars,url+ i +1,2);
+            // it is not suitable for sscanf %hhx because of serial data
+            uint8_t onebyte = (uint8_t)strtoul(hexchars,NULL,16);
             buf[j] = onebyte;
             i += 2;
         }
@@ -91,14 +97,13 @@ void free_syntax_block_content(action_syntax_t *syntax_block)
     }
 }
 
-//TODO:gtest
-STATIC int GET_req_parser_kw(char *req, size_t n, action_syntax_t *syntax_block)
+COM_INNER_DECL int GET_req_parser_kw(char *req, size_t n, action_syntax_t *syntax_block)
 {
     size_t should_skipped_byte = 5; // skip "GET /"
     uint8_t *alloc_key = NULL;
     if (n <= should_skipped_byte)
     {
-        log_msg_debug("request body is too short");
+        log_msg_debug("request is too short");
         goto FAIL;
     }
 
@@ -113,11 +118,19 @@ STATIC int GET_req_parser_kw(char *req, size_t n, action_syntax_t *syntax_block)
     }
 
     // key is allowed to be encoded invisiable byte
+    if(first_whitespace_pos - key_ptr == 0)
+    {
+        log_msg_debug("key size is 0");
+        goto FAIL;
+
+    }
     alloc_key = malloc(first_whitespace_pos - key_ptr);
     size_t key_size = decode_url(key_ptr, alloc_key, first_whitespace_pos - key_ptr);
     alloc_key[key_size] = '\0';
     syntax_block->key = alloc_key;
     syntax_block->val = NULL;
+    syntax_block->data_type = 0;
+    syntax_block->TTL = 0;
 
     return 0;
 
@@ -129,9 +142,8 @@ FAIL:
     return -1;
 }
 
-
-//TODO:gtest
-STATIC char *Content_Length_in_header(char *req, size_t n, size_t *num)
+// TODO:gtest
+COM_INNER_DECL char *Content_Length_in_header(char *req, size_t n, size_t *num)
 {
     char *content_length_pos = strstr(req, "Content-Length: ");
     if (content_length_pos == NULL || content_length_pos - req + 16 >= n)
@@ -153,8 +165,8 @@ FAIL:
     return NULL;
 }
 
-//TODO:gtest
-STATIC int url_query_kv_part(char *s, action_syntax_t *syntax_block, size_t n)
+// TODO:gtest
+COM_INNER_DECL int url_query_kv_part(char *s, action_syntax_t *syntax_block, size_t n)
 {
     char buf[128] = {0};
     char *key_end = strchr(s, '=');
@@ -181,8 +193,8 @@ STATIC int url_query_kv_part(char *s, action_syntax_t *syntax_block, size_t n)
     return 0;
 }
 
-//TODO:gtest
-STATIC int url_query_parser(char *URL_without_start_slash, action_syntax_t *syntax_block, size_t URL_without_start_slash_N)
+// TODO:gtest
+COM_INNER_DECL int url_query_parser(char *URL_without_start_slash, action_syntax_t *syntax_block, size_t URL_without_start_slash_N)
 {
     char *start_query = strchr(URL_without_start_slash, '?');
     if (start_query == NULL || start_query - URL_without_start_slash >= URL_without_start_slash_N)
@@ -216,8 +228,8 @@ STATIC int url_query_parser(char *URL_without_start_slash, action_syntax_t *synt
     return 0;
 }
 
-//TODO:gtest
-STATIC int content_parser(size_t should_skipped_byte, char *req, size_t n, action_syntax_t *syntax_block)
+// TODO:gtest
+COM_INNER_DECL int content_parser(size_t should_skipped_byte, char *req, size_t n, action_syntax_t *syntax_block)
 {
     uint8_t *alloc_key = NULL;
     uint8_t *alloc_value = NULL;
@@ -287,20 +299,20 @@ FAIL:
     }
     return -1;
 }
-STATIC int POST_req_parser_kw(char *req, size_t n, action_syntax_t *syntax_block)
+COM_INNER_DECL int POST_req_parser_kw(char *req, size_t n, action_syntax_t *syntax_block)
 {
     size_t should_skipped_byte = 6; // skip "POST /"
     return content_parser(should_skipped_byte, req, n, syntax_block);
 }
 
-STATIC int PUT_req_parser_kw(char *req, size_t n, action_syntax_t *syntax_block)
+COM_INNER_DECL int PUT_req_parser_kw(char *req, size_t n, action_syntax_t *syntax_block)
 {
     size_t should_skipped_byte = 5; // skip "PUT /"
     return content_parser(should_skipped_byte, req, n, syntax_block);
 }
 
-//TODO:gtest
-STATIC int DELETE_req_parser_kw(char *req, size_t n, action_syntax_t *syntax_block)
+// TODO:gtest
+COM_INNER_DECL int DELETE_req_parser_kw(char *req, size_t n, action_syntax_t *syntax_block)
 {
     size_t should_skipped_byte = 8; // skip "DELETE /"
     uint8_t *alloc_key = NULL;
@@ -336,7 +348,7 @@ FAIL:
     return -1;
 }
 
-//TODO:gtest
+// TODO:gtest
 int http_req_parser(uint8_t *req, size_t n, action_syntax_t *syntax_block)
 {
     char *first_whitespace_pos = strchr((const char *)req, ' ');
