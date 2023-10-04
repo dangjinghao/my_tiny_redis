@@ -1,12 +1,14 @@
 ## My Plan
-- training SOCKET and data structure programming
+- SOCKET and data structure training && programming
 - using LLRBtree to store and search data
-- trying to program with moderncpp
+- try to program with moderncpp
 - http request support
 - try gtest
 - io uring
+- persistence
+- logs recovery
+- memory snapshort 
 
-**encoding ? is possible not supported
 ## action
 **PUT**
 ```
@@ -38,7 +40,9 @@ GET /[key] HTTP/x.x\r\n
 
 When using '' or "", don't escape value.
 
-**TODO**~~maybe list is not necessary~~
+**TODO**
+
+~~maybe list is not necessary~~
 
 ### list (atomic)
 
