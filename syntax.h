@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 extern const size_t AVALIABLE_ACT;
+extern const size_t AVALIABLE_TYPE;
 extern const char*act_str[];
 extern const char*type_str[];
 typedef enum 

@@ -1,10 +1,10 @@
 ## My Plan
-- query
-- try gtest
+- try gtest 
 - using LLRBtree to store and search data
 - persistence
 - memory snapshort (little CRIU)
 - logs recovery
+- query [done]
 - SOCKET and data structure training && programming [done]
 - http request support [done]
 - io uring [done]

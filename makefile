@@ -9,7 +9,7 @@ CXXFLAGS := $(CFLAGS)
 CXXFLAGS += -Wno-write-strings
 
 LDLIBS := -luring
-TESTLDLIBS := -libgtest
+TESTLDLIBS := -lgtest
 
 CC := gcc
 CXX := g++
@@ -31,6 +31,11 @@ test/%.o: %.c
 
 test: $(TEST_OBJS) 
 	$(CXX) $(CXXSRCS) $(CXXFLAGS) -DTEST $(TEST_OBJS) -o test/gtest_$(NAME) $(LDLIBS) $(TESTLDLIBS)
-	test/gtest_tinyredis
+	
+run-test:test
+	./test/gtest_$(NAME)
+
+run-debug:debug
+	./debug/$(NAME)
 clean:
 	rm -f test/* debug/*
