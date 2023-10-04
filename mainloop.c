@@ -12,12 +12,12 @@
 #include "sock_module.h"
 #include "parser.h"
 #include "log.h"
-STATIC const size_t HEADER_SIZE_LIMIT = 10 * 1024; // put or post
-STATIC const unsigned int ENTRIES_SIZE = 1024;
+COM_INNER_DECL const size_t HEADER_SIZE_LIMIT = 10 * 1024; // put or post
+COM_INNER_DECL const unsigned int ENTRIES_SIZE = 1024;
 
-STATIC struct io_uring ring;
-STATIC int serverfd;
-STATIC void sig_intp_handler(int signo)
+COM_INNER_DECL struct io_uring ring;
+COM_INNER_DECL int serverfd;
+COM_INNER_DECL void sig_intp_handler(int signo)
 {
     if (signo == SIGINT)
     {
@@ -75,7 +75,7 @@ int main(int argc, char const *argv[])
     }
     set_log_level(LOG_DEBUG);
     disable_ctrl_c_output();
-    serverfd = init_sock(8000);
+    serverfd = init_sock(port);
 
     struct io_uring_params params = {0};
     io_uring_queue_init_params(ENTRIES_SIZE, &ring, &params);
