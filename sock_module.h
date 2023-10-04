@@ -1,4 +1,6 @@
-#pragma once
+#ifndef SOCK_MODULE_H
+#define SOCK_MODULE_H
+
 #include <sys/socket.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -19,3 +21,5 @@ void new_accept_event(struct io_uring*ring,int serverfd,struct sockaddr*addr,soc
 void new_send_event(struct io_uring*ring,int clientfd,void *write_buf,size_t n,int flags,void*reuse_heap_info);
 void new_recv_event(struct io_uring*ring,int clientfd,void*heap_buf,size_t buf_size,int flags,void*reuse_heap_info);
 int init_sock(uint16_t port);
+
+#endif

@@ -63,6 +63,8 @@ int init_sock(uint16_t port)
         log_errno("socket");
     }
     struct sockaddr_in addr = {.sin_family = AF_INET,.sin_port = ntohs(port),.sin_addr.s_addr = ntohl(INADDR_ANY)};
+        int val = 1;
+    setsockopt(sockfd,SOL_SOCKET,SO_REUSEADDR,&val,sizeof(val));
     if(bind(sockfd,(struct sockaddr*)&addr,sizeof(struct sockaddr)) == -1)
     {
         log_errno("bind");
