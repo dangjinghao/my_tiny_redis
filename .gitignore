@@ -1,5 +1,4 @@
 *
-!.gitignore
 !*.c
 !*.h
 !*.md
@@ -8,3 +7,5 @@
 !test
 !release
 !debug
+!*.sh
+!.*
