@@ -5,22 +5,22 @@
 
 extern const size_t AVALIABLE_ACT;
 extern const size_t AVALIABLE_TYPE;
-extern const char*act_str[];
-extern const char*type_str[];
-typedef enum 
+extern const char *act_str[];
+extern const char *type_str[];
+typedef enum
 {
     sat_CREATE = 0,
     sat_DELETE,
     sat_UPDATE,
     sat_GET,
-}syntax_action_type;
+} syntax_action_type;
 
-typedef enum 
+typedef enum
 {
     sdt_STRING = 0,
-    sdt_INT, //int64_t
-    sdt_COUNT, //uint64_t
-    sdt_FLOAT, //double 
+    sdt_INT,   // int64_t
+    sdt_COUNT, // uint64_t
+    sdt_FLOAT, // double
 } syntax_data_type;
 
 typedef enum
@@ -34,14 +34,14 @@ typedef enum
     ao_lidxget,
     ao_lidxrm,
     ao_lidxmod,
-}adv_opt_type;
+} adv_opt_type;
 typedef struct action_syntax
 {
     syntax_action_type action;
-    uint8_t* key;
-    uint8_t* val;
+    uint8_t *key;
+    uint8_t *val;
     syntax_data_type data_type;
-    int64_t TTL; //0 is forever
+    uint64_t TTL; // 0 is forever
     adv_opt_type adv_opt;
 } action_syntax_t;
 

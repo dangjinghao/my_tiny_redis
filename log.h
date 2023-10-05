@@ -2,13 +2,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef const enum{
+typedef const enum {
     LOG_DEBUG,
     LOG_INFO,
     LOG_WARNING,
     LOG_FATAL
 } LOG_LEVEL;
-
 
 void log_errno(char *msg);
 

@@ -45,7 +45,7 @@ void disable_ctrl_c_output()
         exit(EXIT_FAILURE);
     }
 }
-//TODO:gtest
+// TODO:gtest
 void solver(uint8_t *read_buf, size_t n)
 {
     action_syntax_t syn;
@@ -105,7 +105,6 @@ int main(int argc, char const *argv[])
 
             if (process_heap_info->evtype == EV_ACCEPT_DONE)
             {
-
                 if (cqe->res < 0)
                     continue;
 
@@ -122,7 +121,6 @@ int main(int argc, char const *argv[])
             // FIXME:maybe the buffer is not enough to store
             else if (process_heap_info->evtype == EV_READ_DONE)
             {
-
                 if (cqe->res < 0)
                     continue;
                 if (cqe->res == 0)
@@ -131,7 +129,6 @@ int main(int argc, char const *argv[])
                 }
                 else
                 {
-
                     char *read_buf = process_heap_info->data;
                     log_printf_debug("\nrecv[%d]\n%s\n", cqe->res, read_buf);
                     solver(read_buf, cqe->res);
@@ -140,7 +137,6 @@ int main(int argc, char const *argv[])
             }
             else if (process_heap_info->evtype == EV_WRITE_DONE)
             {
-
                 free(process_heap_info->data);
                 free(process_heap_info);
                 close(process_heap_info->sockfd);
