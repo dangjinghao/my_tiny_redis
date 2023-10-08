@@ -1,4 +1,4 @@
-#!/bin/env sh
+#!/bin/env bash
 if [ ! $1 ]
 then
     echo "empty mode: debug/test"

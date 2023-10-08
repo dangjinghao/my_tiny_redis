@@ -1,16 +1,17 @@
 ## My Plan
-- try gtest 
 - using LLRBtree to store and search data
-- persistence
+- TTL support(scan thread and dead mark when access)
+- persistence(data serialization)
+- logs recovery(action serialization)
 - memory snapshort (little CRIU)
-- logs recovery
+- try gtest [done]
 - query [done]
 - for invisible byte, using url encode, 0x08 -> %08 [done]
 - SOCKET and data structure training && programming [done]
 - http request support [done]
 - io uring [done]
 - simple log [done]
-- try to program with moderncpp [not necessary]
+- try to program with cpp [done]
 ## action
 
 **PUT**
