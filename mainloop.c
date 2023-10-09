@@ -51,6 +51,15 @@ void disable_ctrl_c_output()
 void solver(uint8_t *read_buf, size_t n,uint8_t *send_buf,size_t send_buf_n)
 {
     action_syntax_t syn;
+
+    // check if it is root path
+    char*is_not_root = strstr((char*)read_buf," / ");;
+    if(is_not_root !=NULL)
+    {
+        gen_response(send_buf,send_buf_n,(uint8_t*)"hello from tiny-redis!",22);
+        return ;
+    }
+
     if (http_req_parser(read_buf, n, &syn) == -1)
     {
         return;
