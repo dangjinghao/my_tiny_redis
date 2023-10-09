@@ -1,4 +1,4 @@
-.PHONY: all test debug clean 
+.PHONY: all test debug clean run-debug run-test
 
 NAME := tinyredis
 CSRCS := $(shell find . -maxdepth 1 -name "*.c")
@@ -29,7 +29,7 @@ debug/%.o: %.cpp
 	$(CXX) $(DEBUGFLAGS) -c $< -o $@
 debug: $(DEBUG_OBJS)
 	$(CXX) $(DEBUGFLAGS) $(DEBUG_OBJS) -o debug/$(NAME)  $(LDLIBS) 
-run-debug:debug
+run-debug: debug
 	gdb ./debug/$(NAME)
 
 
@@ -40,7 +40,7 @@ test/%.o: %.cpp
 
 test: $(TEST_OBJS) 
 	$(CXX) $(TEST_OBJS) $(TESTFLAGS)  -o test/gtest_$(NAME) $(TESTLDLIBS)
-run-test:test
+run-test: test
 	./test/gtest_$(NAME)
 
 

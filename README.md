@@ -1,10 +1,12 @@
 ## My Plan
 - comments
+- TTL support(io_uring_prep_timeout)
+- BIG req/res size supports
 - memory leak check
-- TTL support(scan thread and dead mark when access)
 - persistence(data serialization)
 - logs recovery(action serialization)
 - memory snapshort (little CRIU)
+- lazy TTL deletion[done]
 - using LLRBtree to store and search data [done]
 - try gtest [done]
 - query [done]
@@ -13,7 +15,8 @@
 - http request support [done]
 - io uring [done]
 - simple log [done]
-- try to program with cpp [done]
+- makefile [done]
+- ~~try to program with cpp~~ Hybird-programming based on C and C++ [done]
 ## action
 
 **PUT**

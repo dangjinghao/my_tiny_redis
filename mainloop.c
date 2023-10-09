@@ -56,7 +56,7 @@ void solver(uint8_t *read_buf, size_t n,uint8_t *send_buf,size_t send_buf_n)
     char*is_not_root = strstr((char*)read_buf," / ");;
     if(is_not_root !=NULL)
     {
-        gen_response(send_buf,send_buf_n,(uint8_t*)"hello from tiny-redis!",22);
+        gen_response(send_buf,send_buf_n,(uint8_t*)"hello from tiny-redis!\n",23);
         return ;
     }
 
@@ -68,37 +68,54 @@ void solver(uint8_t *read_buf, size_t n,uint8_t *send_buf,size_t send_buf_n)
     char *kw1 = syn.key == NULL ? "NULL" : (char *)syn.key;
     char *kw2 = syn.val == NULL ? "NULL" : (char *)syn.val;
     struct tiny_string_raw*value_result;
-    int result_get;
+    int tree_action_rel;
     log_printf_debug("syn: %s\t|k: %s\t|v: %s|type:%s \t|TTL: %ld\n", act_str[syn.action], kw1, kw2, type_str[syn.data_type], syn.TTL);
 
     switch (syn.action)
     {
     case sat_CREATE:
         log_msg_debug("dealing with create request");
-        if(put_into_tree(&syn)!= 0)
+        switch(put_into_tree(&syn))
         {
-            log_msg_warn("something is wrong in `put_into_tree`!");
+            case 0:
+                gen_response(send_buf,send_buf_n,(uint8_t*)"create done!\n",13);
+                break;
+            default:
+                gen_response(send_buf,send_buf_n,(uint8_t*)"something is wrong!\n",19);
+                log_msg_warn("something is wrong in `put_into_tree`!");
+                break;
         }
-        gen_response(send_buf,send_buf_n,(uint8_t*)"create done!\n",13);
+
         break;
     case sat_DELETE:
         log_msg_debug("dealing with delete request");
-        
+        tree_action_rel = delete_in_tree(&syn);
+        switch (tree_action_rel) {
+            case 0:
+                gen_response(send_buf,send_buf_n,(uint8_t*)"removed!\n",7);
+                break;
+            case -2:
+                gen_response(send_buf,send_buf_n,(uint8_t*)"no content\n",10);
+                break;
+            default:
+                log_msg_warn("something is wrong in `delete_in_tree`!");
+
+        }
+
         break;
     case sat_GET:
-        result_get = get_from_tree(&syn,&value_result);
-
-        switch (result_get) {
+        log_msg_debug("dealing with get request");
+        tree_action_rel = get_from_tree(&syn,&value_result);
+        switch (tree_action_rel) {
             case 0:
                 gen_response(send_buf,send_buf_n,value_result->p,value_result->used);
                 break;
             case -2:
-                gen_response(send_buf,send_buf_n,(uint8_t*)"no content",10);
+                gen_response(send_buf,send_buf_n,(uint8_t*)"no content\n",10);
                 break;
             default:
                 log_msg_warn("something is wrong in `get_from_tree`!");
         }
-        log_msg_debug("dealing with get request");
         break;
 
     case sat_UPDATE:

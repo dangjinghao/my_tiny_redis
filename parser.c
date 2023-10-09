@@ -374,6 +374,8 @@ COM_INNER_DECL int DELETE_req_parser_kw(char *req, size_t n,
     syntax_block->key_size = key_size;
     syntax_block->val = NULL;
     syntax_block->val_size = 0;
+    syntax_block->TTL = 0;
+    syntax_block->data_type = 0;
     return 0;
 
 FAIL:

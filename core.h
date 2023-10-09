@@ -12,6 +12,7 @@ struct tiny_string_raw
 };
 int put_into_tree(action_syntax_t *syn_block);
 int get_from_tree(action_syntax_t*syn_block,struct tiny_string_raw** tiny_str_ref);
+int delete_in_tree(action_syntax_t *syn_block);
 #ifdef __cplusplus
 }
 #endif
