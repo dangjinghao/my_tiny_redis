@@ -1,41 +1,48 @@
 .PHONY: all test debug clean 
 
 NAME := tinyredis
-SRCS := $(shell find . -maxdepth 1 -name "*.c")
-CXXSRCS := $(shell find . -maxdepth 1 -name "*.cpp")
-CFLAGS := -g 
+CSRCS := $(shell find . -maxdepth 1 -name "*.c")
+CXXSRCS := $(shell find . -maxdepth 1 -name "*.cpp" -not -name "gtest*")
+ALLSRCS := $(CSRCS) $(CXXSRCS)
 
-CXXFLAGS := $(CFLAGS)
-CXXFLAGS += -Wno-write-strings
+DEBUGFLAGS := -g 
+
+TESTFLAGS := $(DEBUGFLAGS)
+TESTFLAGS += -Wno-write-strings -DTEST
 
 LDLIBS := -luring
-TESTLDLIBS := -lgtest
+
+TESTLDLIBS := $(LDLIBS)
+TESTLDLIBS += -lgtest
 
 CC := gcc
 CXX := g++
 
-TEST_OBJS := $(patsubst ./%.c,test/%.o,$(SRCS))
-DEBUG_OBJS := $(patsubst ./%.c,debug/%.o,$(SRCS))
+TEST_OBJS := $(patsubst ./%.c,test/%.o,$(patsubst ./%.cpp,test/%.o,$(shell echo $(ALLSRCS) ./gtest_main.cpp)))
+DEBUG_OBJS := $(patsubst ./%.c,debug/%.o,$(patsubst ./%.cpp,debug/%.o,$(ALLSRCS)))
 
 all: debug test
 
+debug/%.o: %.c 
+	$(CC) $(DEBUGFLAGS) -c $< -o $@ $(LDLIBS) 
+debug/%.o: %.cpp
+	$(CXX) $(DEBUGFLAGS) -c $< -o $@
 debug: $(DEBUG_OBJS)
-	$(CC) $(CFLAGS) $(DEBUG_OBJS) -o debug/$(NAME)  $(LDLIBS) 
+	$(CXX) $(DEBUGFLAGS) $(DEBUG_OBJS) -o debug/$(NAME)  $(LDLIBS) 
+run-debug:debug
+	./debug/$(NAME)
 
-debug/%.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@ $(LDLIBS) 
 
-test/%.o: %.c
-	$(CC) $(CFLAGS) -DTEST -c $< -o $@ $(LDLIBS) 
-
+test/%.o: %.c 
+	$(CC) $(TESTFLAGS) -c $< -o $@ 
+test/%.o: %.cpp
+	$(CXX) $(TESTFLAGS) -c $< -o $@
 
 test: $(TEST_OBJS) 
-	$(CXX) $(CXXSRCS) $(CXXFLAGS) -DTEST $(TEST_OBJS) -o test/gtest_$(NAME) $(LDLIBS) $(TESTLDLIBS)
-	
+	$(CXX) $(TEST_OBJS) $(TESTFLAGS)  -o test/gtest_$(NAME) $(TESTLDLIBS)
 run-test:test
 	./test/gtest_$(NAME)
 
-run-debug:debug
-	./debug/$(NAME)
+
 clean:
 	rm -f test/* debug/*
