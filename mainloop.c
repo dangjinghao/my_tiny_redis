@@ -2,12 +2,13 @@
 #include <liburing.h>
 #include <netinet/in.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <string.h>
 #include <stdio.h>
 #include <strings.h>
 #include <unistd.h>
 #include <termios.h>
-
+#include "core.h"
 #include "syntax.h"
 #include "sock_module.h"
 #include "parser.h"
@@ -56,8 +57,34 @@ void solver(uint8_t *read_buf, size_t n)
 
     char *kw1 = syn.key == NULL ? "NULL" : (char *)syn.key;
     char *kw2 = syn.val == NULL ? "NULL" : (char *)syn.val;
-    printf("syn: %s\t|k: %s\t|v: %s|type:%s \t|TTL: %ld\n", act_str[syn.action], kw1, kw2, type_str[syn.data_type], syn.TTL);
+    struct tiny_string_raw*value_result;
 
+    log_printf_debug("syn: %s\t|k: %s\t|v: %s|type:%s \t|TTL: %ld\n", act_str[syn.action], kw1, kw2, type_str[syn.data_type], syn.TTL);
+
+    switch (syn.action)
+    {
+    case sat_CREATE:
+        log_msg_debug("dealing with create request");
+        if(put_into_tree(&syn)!= 0)
+        {
+            log_msg_warn("something is wrong in `put_into_tree`!");
+        }
+        break;
+    case sat_DELETE:
+        log_msg_debug("dealing with delete request");
+        break;
+    case sat_GET:
+        if(get_from_tree(&syn,&value_result) != 0)
+        {
+            log_msg_warn("something is wrong in `get_from_tree`!");
+        }
+        log_msg_info((char*)value_result->p);
+        log_msg_debug("dealing with get request");
+        break;
+    case sat_UPDATE:
+        log_msg_debug("dealing with update request");
+        break;
+    }
     free_syntax_block_content(&syn);
 }
 

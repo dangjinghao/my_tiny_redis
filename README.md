@@ -1,9 +1,10 @@
 ## My Plan
-- using LLRBtree to store and search data
+- comments
 - TTL support(scan thread and dead mark when access)
 - persistence(data serialization)
 - logs recovery(action serialization)
 - memory snapshort (little CRIU)
+- using LLRBtree to store and search data [done]
 - try gtest [done]
 - query [done]
 - for invisible byte, using url encode, 0x08 -> %08 [done]

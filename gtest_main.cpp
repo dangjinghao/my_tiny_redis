@@ -10,39 +10,6 @@
 #include "llrbtree.hpp"
 #include "gtest_all_func.h"
 
-struct tiny_str
-{
-    size_t cap = 2030;
-    size_t used;
-    int8_t p[2030];
-    int64_t operator-(const tiny_str &rhs)
-    {
-        int rel;
-        for (size_t comp = 0; comp < this->used && comp < rhs.used; comp++)
-        {
-            if ((rel = this->p[comp] - rhs.p[comp]) != 0) return rel;
-        }
-        return 0;
-    }
-    tiny_str(const char *rs)
-    {
-        used = strlen(rs);
-        memcpy(p, rs, used);
-    }
-    tiny_str(const char *rs,size_t default_cap)
-    {
-        used = strlen(rs);
-        this->cap = default_cap; 
-        memcpy(p, rs, used);
-    }
-    tiny_str():used(0){}
-    void set_str(char*s){
-        used = strlen(s);
-        assert(used <= cap);
-        memcpy(p, s, used);
-    }
-
-};
 
 
 int main(int argc, char const *argv[])
@@ -139,58 +106,6 @@ int main(int argc, char const *argv[])
     std::cout << "llrbtree test" << std::endl;
 
 
-    auto key_pool = new tiny_str[10];
-    auto val_pool = new size_t[10];
-
-    red_black_BST<tiny_str, size_t> rbt{};
-    // for(size_t i = 0; i < 10;i ++){
-    //     key_pool[i].set_str("str0");
-    //     key_pool[i].p[3] = i + '0';
-    //     val_pool[i] = i;
-    //     rbt.put(key_pool+i,val_pool + i);
-    // }
-
-    // assert(rbt.is_balanced());
-    // assert(rbt.is_BST());
-    
-    // tiny_str a4_t {"str5"};
-    // tiny_str t{"str5"};
-    // rbt.remove(&t);
-    // std::cout<<rbt.get(&a4_t)<<std::endl;
-    std::ifstream text_file;
-    text_file.open("./text.txt");
-    std::string str_buf;
-    std::vector<std::string> strs;
-    
-    while (!text_file.eof()) {
-        text_file >> str_buf;
-        strs.push_back(str_buf);
-    }
-    auto strloop = new tiny_str[strs.size()];
-    auto sizeloop = new size_t[strs.size()];
-    
-    for (size_t i = 0; i< strs.size();i++) {
-        strloop[i].set_str((char*)strs[i].c_str());
-    }
-
-    size_t allsize = strs.size();
-    strs.clear();
-    size_t size_idx = 0;
-    for (size_t i = 0; i< allsize;i++) {
-        size_t*rel;
-        if((rel = rbt.get(&strloop[i])) == nullptr){
-
-        sizeloop[size_idx] = 1;
-        rbt.put(&strloop[i],&sizeloop[size_idx++]);
-        }
-        else{
-            *rel = *rel + 1;
-            rbt.put(&strloop[i],rel);
-        }
-    }
-    text_file.close();
-    delete [] strloop;
-    delete [] sizeloop;
     
     std::cout << "llrbtree test done" << std::endl;
 

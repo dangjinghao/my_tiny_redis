@@ -18,9 +18,8 @@ typedef enum
 typedef enum
 {
     sdt_STRING = 0,
-    sdt_INT,   // int64_t
-    sdt_COUNT, // uint64_t
-    sdt_FLOAT, // double
+    sdt_SET,
+    sdt_LIST,
 } syntax_data_type;
 
 typedef enum
@@ -35,11 +34,14 @@ typedef enum
     ao_lidxrm,
     ao_lidxmod,
 } adv_opt_type;
+
 typedef struct action_syntax
 {
     syntax_action_type action;
     uint8_t *key;
+    size_t key_size;
     uint8_t *val;
+    size_t val_size;
     syntax_data_type data_type;
     uint64_t TTL; // 0 is forever
     adv_opt_type adv_opt;
