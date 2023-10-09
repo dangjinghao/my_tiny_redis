@@ -76,3 +76,11 @@ int init_sock(uint16_t port)
 
     return sockfd;
 }
+
+void gen_response(uint8_t*send_buf,size_t buf_size,uint8_t*content,size_t content_length)
+{
+    assert(buf_size >= 1024);
+    sprintf((char*)send_buf,"HTTP/1.0 200 OK\r\nServer: tiny_redis_httpd/0.0.1\r\nContent-Type: text/plain\r\nContent-Length:%ld\r\n\r\n",content_length);
+    char*start_body = strstr((char*)send_buf,"\r\n\r\n") + 4;
+    memcpy(start_body,content,content_length);
+}

@@ -13,6 +13,7 @@
 #include "sock_module.h"
 #include "parser.h"
 #include "log.h"
+#include <assert.h>
 COM_INNER_DECL const size_t HEADER_SIZE_LIMIT = 2 * 1024; // put or post
 COM_INNER_DECL const unsigned int ENTRIES_SIZE = 1024;
 
@@ -47,7 +48,7 @@ void disable_ctrl_c_output()
     }
 }
 // TODO:gtest
-void solver(uint8_t *read_buf, size_t n)
+void solver(uint8_t *read_buf, size_t n,uint8_t *send_buf,size_t send_buf_n)
 {
     action_syntax_t syn;
     if (http_req_parser(read_buf, n, &syn) == -1)
@@ -58,7 +59,7 @@ void solver(uint8_t *read_buf, size_t n)
     char *kw1 = syn.key == NULL ? "NULL" : (char *)syn.key;
     char *kw2 = syn.val == NULL ? "NULL" : (char *)syn.val;
     struct tiny_string_raw*value_result;
-
+    int result_get;
     log_printf_debug("syn: %s\t|k: %s\t|v: %s|type:%s \t|TTL: %ld\n", act_str[syn.action], kw1, kw2, type_str[syn.data_type], syn.TTL);
 
     switch (syn.action)
@@ -69,18 +70,28 @@ void solver(uint8_t *read_buf, size_t n)
         {
             log_msg_warn("something is wrong in `put_into_tree`!");
         }
+        gen_response(send_buf,send_buf_n,(uint8_t*)"create done!\n",13);
         break;
     case sat_DELETE:
         log_msg_debug("dealing with delete request");
+        
         break;
     case sat_GET:
-        if(get_from_tree(&syn,&value_result) != 0)
-        {
-            log_msg_warn("something is wrong in `get_from_tree`!");
+        result_get = get_from_tree(&syn,&value_result);
+
+        switch (result_get) {
+            case 0:
+                gen_response(send_buf,send_buf_n,value_result->p,value_result->used);
+                break;
+            case -2:
+                gen_response(send_buf,send_buf_n,(uint8_t*)"no content",10);
+                break;
+            default:
+                log_msg_warn("something is wrong in `get_from_tree`!");
         }
-        log_msg_info((char*)value_result->p);
         log_msg_debug("dealing with get request");
         break;
+
     case sat_UPDATE:
         log_msg_debug("dealing with update request");
         break;
@@ -100,7 +111,7 @@ int main(int argc, char const *argv[])
     {
         port = atoi(argv[1]);
     }
-    set_log_level(LOG_DEBUG);
+    set_log_level(LOG_INFO);
     disable_ctrl_c_output();
     serverfd = init_sock(port);
 
@@ -156,10 +167,16 @@ int main(int argc, char const *argv[])
                 }
                 else
                 {
-                    char *read_buf = process_heap_info->data;
+                    uint8_t *read_buf = process_heap_info->data;
+                    uint8_t *send_buf = calloc( 2048,sizeof(uint8_t));
+
                     log_printf_debug("\nrecv[%d]\n%s\n", cqe->res, read_buf);
-                    solver(read_buf, cqe->res);
-                    new_send_event(&ring, process_heap_info->sockfd, read_buf, cqe->res, 0, process_heap_info);
+                    solver(read_buf, cqe->res,send_buf,2048);
+
+                    // we don't need this read buffer now
+                    free(read_buf);
+                    process_heap_info->data = send_buf;
+                    new_send_event(&ring, process_heap_info->sockfd, send_buf, 2048 , 0, process_heap_info);
                 }
             }
             else if (process_heap_info->evtype == EV_WRITE_DONE)

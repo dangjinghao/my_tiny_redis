@@ -30,7 +30,7 @@ debug/%.o: %.cpp
 debug: $(DEBUG_OBJS)
 	$(CXX) $(DEBUGFLAGS) $(DEBUG_OBJS) -o debug/$(NAME)  $(LDLIBS) 
 run-debug:debug
-	./debug/$(NAME)
+	gdb ./debug/$(NAME)
 
 
 test/%.o: %.c 

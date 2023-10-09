@@ -22,5 +22,6 @@ void new_accept_event(struct io_uring *ring, int serverfd, struct sockaddr *addr
 void new_send_event(struct io_uring *ring, int clientfd, void *write_buf, size_t n, int flags, void *reuse_heap_info);
 void new_recv_event(struct io_uring *ring, int clientfd, void *heap_buf, size_t buf_size, int flags, void *reuse_heap_info);
 int init_sock(uint16_t port);
+void gen_response(uint8_t*send_buf,size_t buf_size,uint8_t*content,size_t content_length);
 
 #endif

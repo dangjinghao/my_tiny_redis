@@ -25,7 +25,6 @@ const char *type_str[] = {
     "LIST",
 };
 
-
 COM_INNER_DECL int valid_action(char *s)
 {
     if (s == NULL)
@@ -126,8 +125,8 @@ COM_INNER_DECL int GET_req_parser_kw(char *req, size_t n,
     alloc_key = malloc(first_whitespace_pos - key_ptr);
     size_t key_size =
         decode_url(key_ptr, alloc_key, first_whitespace_pos - key_ptr);
-        
-    syntax_block->key_size  = key_size;
+
+    syntax_block->key_size = key_size;
     syntax_block->key = alloc_key;
     syntax_block->val = NULL;
     syntax_block->val_size = 0;
@@ -291,7 +290,6 @@ COM_INNER_DECL int content_parser(size_t should_skipped_byte, char *req,
     size_t key_size =
         decode_url(key_ptr, alloc_key, first_whitespace_pos_after_key - key_ptr);
 
-
     // read real content length from header: Content-Length
     size_t Content_Length_header;
     char *CL_end_ptr = Content_Length_in_header(req, n, &Content_Length_header);
@@ -312,7 +310,7 @@ COM_INNER_DECL int content_parser(size_t should_skipped_byte, char *req,
 
     alloc_value = malloc(Content_Length_header);
     memcpy(alloc_value, body_start, Content_Length_header);
-    
+
     syntax_block->key_size = key_size;
     syntax_block->key = alloc_key;
     syntax_block->val = alloc_value;

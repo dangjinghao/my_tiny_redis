@@ -1,5 +1,6 @@
 ## My Plan
 - comments
+- memory leak check
 - TTL support(scan thread and dead mark when access)
 - persistence(data serialization)
 - logs recovery(action serialization)
