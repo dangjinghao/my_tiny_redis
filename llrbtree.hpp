@@ -32,7 +32,7 @@ class red_black_BST
         {
         }
     };
-    using vector_node = std::vector<node>;
+    using vector_node = std::vector<node*>;
     using vector_key = std::vector<key_type*>;
 
     node *root = nullptr;
@@ -281,6 +281,15 @@ class red_black_BST
         if (cmphi > 0) keys(x->right, v, lo, hi);
 
     }
+    void nodes(node*x,vector_node& v)
+    {
+        if(x == nullptr) return;
+
+        nodes(x->left,v);
+        v.push_back(x);
+        nodes(x->right,v);
+    }
+    
   public:
     size_t size()
     {
@@ -403,6 +412,17 @@ vector_key keys()
     auto rel = keys(max(),min());
     return rel;
 }
-//TODO:clear
+
+void clean_all()
+{
+    if(is_empty()) return;
+    vector_node all_nodes{};
+    all_nodes.reserve(root->size);
+    nodes(root,all_nodes);
+    for (auto&n : all_nodes) {
+        delete n;
+    }
+    root = nullptr;
+}
 
 };
