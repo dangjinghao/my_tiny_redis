@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstring>
 #include <iostream>
+#include <vector>
 
 /**
  * @brief left-leaning Red Black Tree only holding pointers
@@ -31,6 +32,8 @@ class red_black_BST
         {
         }
     };
+    using vector_node = std::vector<node>;
+    using vector_key = std::vector<key_type*>;
 
     node *root = nullptr;
 
@@ -266,6 +269,18 @@ class red_black_BST
         return is_balanced(x->left, black) && is_balanced(x->right, black);
     }
 
+    void keys(node* x,vector_key& v,key_type*lo,key_type*hi)
+    {
+        if(x == nullptr) return;
+
+        auto cmplo = *lo - *x->key;
+        auto cmphi = *hi - *x->key;
+        if (cmplo < 0) keys(x->left, v, lo, hi);
+        if (cmplo <= 0 && cmphi >= 0)
+            v.push_back(x->key);
+        if (cmphi > 0) keys(x->right, v, lo, hi);
+
+    }
   public:
     size_t size()
     {
@@ -369,7 +384,25 @@ class red_black_BST
         }
         return is_balanced(root, black);
     }
-};
-//TODO:keys iterator
+
+
+//keys iterator
+vector_key keys(key_type*lo,key_type*hi)
+{
+    assert(lo != nullptr);
+    assert(hi != nullptr);
+    vector_key vec;
+    vec.reserve(root->size);
+    keys(root,vec,lo,hi);
+    return vec;
+}
+vector_key keys()
+{
+    if(is_empty()) return vector_key{};
+    
+    auto rel = keys(max(),min());
+    return rel;
+}
 //TODO:clear
 
+};

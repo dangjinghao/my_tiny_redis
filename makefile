@@ -1,4 +1,4 @@
-.PHONY: all test debug clean run-debug run-test
+.PHONY: all test debug clean run-debug run-test run-gdb run-test-gdb
 
 NAME := tinyredis
 CSRCS := $(shell find . -maxdepth 1 -name "*.c")
@@ -8,7 +8,7 @@ ALLSRCS := $(CSRCS) $(CXXSRCS)
 DEBUGFLAGS := -g 
 
 TESTFLAGS := $(DEBUGFLAGS)
-TESTFLAGS += -Wno-write-strings -DTEST
+TESTFLAGS += -Wno-write-strings -DTEST 
 
 LDLIBS := -luring
 
@@ -30,19 +30,21 @@ debug/%.o: %.cpp
 debug: $(DEBUG_OBJS)
 	$(CXX) $(DEBUGFLAGS) $(DEBUG_OBJS) -o debug/$(NAME)  $(LDLIBS) 
 run-debug: debug
+	./debug/$(NAME)
+run-gdb: debug
 	gdb ./debug/$(NAME)
-
 
 test/%.o: %.c 
 	$(CC) $(TESTFLAGS) -c $< -o $@ 
 test/%.o: %.cpp
-	$(CXX) $(TESTFLAGS) -c $< -o $@
+	$(CXX) $(TESTFLAGS) -c $< -o $@ -std=c++2a
 
 test: $(TEST_OBJS) 
 	$(CXX) $(TEST_OBJS) $(TESTFLAGS)  -o test/gtest_$(NAME) $(TESTLDLIBS)
 run-test: test
 	./test/gtest_$(NAME)
 
-
+run-test-gdb:test
+	gdb ./test/gtest_$(NAME)
 clean:
 	rm -f test/* debug/*

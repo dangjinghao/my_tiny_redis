@@ -3,9 +3,11 @@
 #include <cstddef>
 #include <fstream>
 #include <iostream>
+#include <ostream>
 #include <string>
 #include <vector>
 #include <gtest/gtest.h>
+#include <ranges>
 
 #include "llrbtree.hpp"
 #include "gtest_all_func.h"
@@ -105,8 +107,20 @@ int main(int argc, char const *argv[])
 
     std::cout << "llrbtree test" << std::endl;
 
-
+    red_black_BST<char,int> rbb;
+    char s[] = "4321786590";
+    int v[] = {0,0,0,0,0,0,};
     
+    for(auto i :std::views::iota(0,10))
+    {
+        rbb.put(s+i,v+i);
+    }
+    auto keys = rbb.keys();
+    for(auto i :keys)
+    {
+        std::cout<<*i<<std::endl;
+    }
+
     std::cout << "llrbtree test done" << std::endl;
 
 

@@ -1,6 +1,6 @@
 ## My Plan
 - comments
-- TTL support(io_uring_prep_timeout)
+- TTL support(timer_fd)
 - BIG req/res size supports
 - memory leak check
 - persistence(data serialization)
