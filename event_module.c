@@ -104,7 +104,7 @@ int init_sock(uint16_t port)
     return sockfd;
 }
 
-int init_timer(int secs)
+int init_timer(unsigned long secs)
 {
     struct timespec now;
     timespec_get(&now,TIME_UTC);

@@ -27,5 +27,5 @@ void new_timer_event(struct io_uring *ring, void (*func)(void),int timerfd, void
 void flush_timer_when_available(int timerfd);
 
 int init_sock(uint16_t port);
-int init_timer(int secs);
+int init_timer(unsigned long secs);
 #endif

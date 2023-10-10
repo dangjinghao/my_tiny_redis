@@ -24,7 +24,7 @@ class red_black_BST
     {
         key_type *key;
         val_type *val;
-        node *left=nullptr, *right =nullptr;
+        node *left = nullptr, *right = nullptr;
         size_t size; // sub tree size
         COLOR color;
         node(key_type *key, val_type *val, COLOR c, size_t size) :
@@ -32,8 +32,8 @@ class red_black_BST
         {
         }
     };
-    using vector_node = std::vector<node*>;
-    using vector_key = std::vector<key_type*>;
+    using vector_node = std::vector<node *>;
+    using vector_key = std::vector<key_type *>;
 
     node *root = nullptr;
 
@@ -221,7 +221,7 @@ class red_black_BST
         return h;
     }
 
-    node *balance(node *h)
+    node *balance(node *h) 
     {
         if (is_red(h->right) && !is_red(h->left)) h = rotate_left(h);
         if (is_red(h->left) && is_red(h->left->left)) h = rotate_right(h);
@@ -230,21 +230,21 @@ class red_black_BST
         h->size = this->size(h->left) + this->size(h->right) + 1;
         return h;
     }
-    size_t height(node *x)
+    size_t height(node *x) 
     {
         if (x == nullptr) return -1;
 
         return 1 + std::max(height(x->left), height(x->right));
     }
 
-    node *min(node *x)
+    node *min(node *x) 
     {
         if (x->left == nullptr)
             return x;
         else
             return min(x->left);
     }
-    node *max(node *x)
+    node *max(node *x) 
     {
         if (x->right == nullptr)
             return x;
@@ -252,7 +252,7 @@ class red_black_BST
             return max(x->right);
     }
 
-    bool is_BST(node *x, key_type *min, key_type *max)
+    bool is_BST(node *x, key_type *min, key_type *max) 
     {
         if (x == nullptr) return true;
         if (min != nullptr && *x->key - *min <= 0) return false;
@@ -261,7 +261,7 @@ class red_black_BST
         return is_BST(x->left, min, x->key) && is_BST(x->right, x->key, max);
     }
 
-    bool is_balanced(node *x, size_t black)
+    bool is_balanced(node *x, size_t black) 
     {
         if (x == nullptr) return black == 0;
 
@@ -269,9 +269,9 @@ class red_black_BST
         return is_balanced(x->left, black) && is_balanced(x->right, black);
     }
 
-    void keys(node* x,vector_key& v,key_type*lo,key_type*hi)
+    void keys(node *x, vector_key &v, key_type *lo, key_type *hi) 
     {
-        if(x == nullptr) return;
+        if (x == nullptr) return;
 
         auto cmplo = *lo - *x->key;
         auto cmphi = *hi - *x->key;
@@ -279,34 +279,33 @@ class red_black_BST
         if (cmplo <= 0 && cmphi >= 0)
             v.push_back(x->key);
         if (cmphi > 0) keys(x->right, v, lo, hi);
-
     }
-    void nodes(node*x,vector_node& v)
+    void nodes(node *x, vector_node &v) 
     {
-        if(x == nullptr) return;
+        if (x == nullptr) return;
 
-        nodes(x->left,v);
+        nodes(x->left, v);
         v.push_back(x);
-        nodes(x->right,v);
+        nodes(x->right, v);
     }
-    
+
   public:
-    size_t size()
+    size_t size() 
     {
         return size(root);
     }
-    bool is_empty()
+    bool is_empty() 
     {
         return root == nullptr;
     }
-    val_type *get(key_type *key)
+    val_type *get(key_type *key) 
     {
         assert(key != nullptr);
 
         return get(root, key);
     }
 
-    bool contains(key_type *key)
+    bool contains(key_type *key) 
     {
         return get(key) != nullptr;
     }
@@ -361,28 +360,28 @@ class red_black_BST
         if (!is_empty()) root->color = COLOR::BLACK;
     }
 
-    size_t height()
+    size_t height() 
     {
         return height(root);
     }
-    key_type *min()
+    key_type *min() 
     {
         assert(!is_empty());
         return min(root)->key;
     }
-    key_type *max()
+    key_type *max() 
     {
         assert(!is_empty());
 
         return max(root)->key;
     }
 
-    bool is_BST()
+    bool is_BST() 
     {
         return is_BST(root, nullptr, nullptr);
     }
 
-    bool is_balanced()
+    bool is_balanced() 
     {
         size_t black = 0;
         node *x = root;
@@ -394,35 +393,40 @@ class red_black_BST
         return is_balanced(root, black);
     }
 
-
-//keys iterator
-vector_key keys(key_type*lo,key_type*hi)
-{
-    assert(lo != nullptr);
-    assert(hi != nullptr);
-    vector_key vec;
-    vec.reserve(root->size);
-    keys(root,vec,lo,hi);
-    return vec;
-}
-vector_key keys()
-{
-    if(is_empty()) return vector_key{};
-    
-    auto rel = keys(max(),min());
-    return rel;
-}
-
-void clean_all()
-{
-    if(is_empty()) return;
-    vector_node all_nodes{};
-    all_nodes.reserve(root->size);
-    nodes(root,all_nodes);
-    for (auto&n : all_nodes) {
-        delete n;
+    // keys iterator
+    vector_key keys(key_type *lo, key_type *hi) 
+    {
+        assert(lo != nullptr);
+        assert(hi != nullptr);
+        vector_key vec;
+        vec.reserve(root->size);
+        keys(root, vec, lo, hi);
+        return vec;
     }
-    root = nullptr;
-}
+    vector_key keys() 
+    {
+        if (is_empty()) return vector_key{};
 
+        auto rel = keys(max(), min());
+        return rel;
+    }
+
+    void clean_all()
+    {
+        if (is_empty()) return;
+        auto nodes_array = all_nodes();
+        for (auto &n : nodes_array)
+        {
+            delete n;
+        }
+        root = nullptr;
+    }
+
+    vector_node all_nodes() 
+    {
+        vector_node nodes_array{};
+        nodes_array.reserve(root->size);
+        nodes(root, nodes_array);
+        return nodes_array;
+    }
 };

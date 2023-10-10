@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 typedef const enum {
     LOG_DEBUG,
     LOG_INFO,
@@ -28,3 +31,8 @@ void log_printf_info(char *f, ...);
 void log_printf_warn(char *f, ...);
 
 void log_printf_fatal(char *f, ...);
+
+
+#ifdef __cplusplus
+}
+#endif

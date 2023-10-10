@@ -1,5 +1,6 @@
 #include "test_common.h"
 #include "llrbtree.hpp"
+#include <bits/types/time_t.h>
 #include <cstddef>
 #include <cstdint>
 #include <cassert>
@@ -7,6 +8,7 @@
 #include <cstring>
 #include "syntax.h"
 #include "core.h"
+#include "log.h"
 #include <time.h>
 
 struct tiny_string
@@ -77,12 +79,12 @@ struct trds_Object
 {
     syntax_data_type type;
     void *ptr;
-    size_t dead_ts;
-    trds_Object(syntax_data_type type, void *ptr,size_t ts_secs) :
+    time_t dead_ts;
+    trds_Object(syntax_data_type type, void *ptr,time_t ts_secs) :
         type(type), ptr(ptr),dead_ts(ts_secs)
     {
     }
-    static trds_Object*create(syntax_data_type type, void *ptr,size_t ts_secs = 0)
+    static trds_Object*create(syntax_data_type type, void *ptr,time_t ts_secs = 0)
     {
         return new trds_Object(type, ptr, ts_secs);
     }
@@ -92,7 +94,7 @@ struct trds_Object
     }
 };
 
-static red_black_BST<tiny_string, trds_Object> global_tree;
+static red_black_BST<tiny_string, trds_Object> data_tree;
 
 struct
 {
@@ -129,7 +131,7 @@ extern "C"
         }
 
         // if exists
-        if ((exists_val_warp = global_tree.get(ts_key)) != nullptr)
+        if ((exists_val_warp = data_tree.get(ts_key)) != nullptr)
         {
             exists_val_warp->dead_ts = dead_time;
 
@@ -146,7 +148,7 @@ extern "C"
             ts_val = tiny_string::create(syn_block->val, val_size);
             val_warp = trds_Object::create(sdt_STRING, (void *)ts_val,dead_time);
             
-            global_tree.put(ts_key, val_warp);
+            data_tree.put(ts_key, val_warp);
         }
         return 0;
     FAIL:
@@ -167,7 +169,7 @@ extern "C"
             return -1;
         }
         auto ts_key = tiny_string::create(syn_block->key, key_size);
-        auto rel_val = global_tree.get(ts_key);
+        auto rel_val = data_tree.get(ts_key);
         if (rel_val == nullptr)
         {
             goto NO_REL;
@@ -177,7 +179,7 @@ extern "C"
 
         if(rel_val->dead_ts!=0 && rel_val->dead_ts <= tmspec.tv_sec)
         {
-            global_tree.remove(ts_key);            
+            data_tree.remove(ts_key);            
             *tiny_str_ref = NULL;
 
             goto NO_REL;
@@ -200,7 +202,7 @@ NO_REL:
             return -1;
         }
         auto ts_key = tiny_string::create(syn_block->key, key_size);
-        auto rel_val = global_tree.get(ts_key);
+        auto rel_val = data_tree.get(ts_key);
         if (rel_val == nullptr)
         {
             return -2;
@@ -214,12 +216,32 @@ NO_REL:
         trds_Object::remove(rel_val);
         
         // delete the reference in rbtree
-        global_tree.remove(ts_key);
+        data_tree.remove(ts_key);
 
         // delete the key data
         tiny_string::remove(ts_key);        
 
         return 0;
 
+    }
+
+    int clear_outdated_node()
+    {
+        struct timespec now_tm;
+        timespec_get(&now_tm,TIME_UTC);
+        auto now_ts = now_tm.tv_sec;
+        
+        auto nodes = data_tree.keys();
+        for (auto&k : nodes) {
+            if(data_tree.get(k)->dead_ts < now_ts)
+            {
+                char*buf = (char*)malloc(sizeof(char)*k->used + 1);
+                memcpy(buf,k->p,k->used);
+                buf[k->used] = '\0';
+                log_printf_info((char*)"the node of `%s` is outdated, removing...\n",buf);
+                data_tree.remove(k);
+            }
+        }
+        return 0;
     }
 }

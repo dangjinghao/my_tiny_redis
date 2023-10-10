@@ -22,7 +22,7 @@
 
 COM_INNER_DECL const size_t HEADER_SIZE_LIMIT = 2 * 1024; // put or post
 COM_INNER_DECL const unsigned int ENTRIES_SIZE = 1024;
-COM_INNER_DECL const size_t TIMER_INTERVAL_SECS = 1;
+COM_INNER_DECL const unsigned long TIMER_INTERVAL_SECS = 30;
 
 
 /****************************************/
@@ -72,19 +72,11 @@ void gen_response(uint8_t *send_buf, size_t buf_size, uint8_t *content, size_t c
 
 
 
-static struct timespec prev_tm ={0};
 void timer_worker()
 {
-    struct timespec now_tm;
-    if(prev_tm.tv_sec == 0)
-    {
-        timespec_get(&prev_tm,TIME_UTC);
-
-    }
-
-    timespec_get(&now_tm,TIME_UTC);
-    log_printf_info("timer: %ld secs passed!from %ld to %ld\n",TIMER_INTERVAL_SECS,prev_tm.tv_sec,now_tm.tv_sec);
-    timespec_get(&prev_tm,TIME_UTC);
+    log_msg_info("starting clear outdated node");
+    clear_outdated_node();
+    log_msg_info("clear outdated node done");
 }
 
 // TODO:gtest

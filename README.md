@@ -1,11 +1,12 @@
 ## My Plan
 - comments
-- TTL support(timer_fd)
 - BIG req/res size supports
-- memory leak check
 - persistence(data serialization)
+- memory leak check
 - logs recovery(action serialization)
 - memory snapshort (little CRIU)
+
+- TTL support(timer_fd)[done]
 - lazy TTL deletion[done]
 - using LLRBtree to store and search data [done]
 - try gtest [done]
