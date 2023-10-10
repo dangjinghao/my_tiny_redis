@@ -49,6 +49,7 @@ COM_INNER_DECL int valid_type(char *s)
     return -1;
 }
 
+// usually, n >= return value
 COM_INNER_DECL size_t decode_url(char *url, uint8_t *buf, size_t n)
 {
     size_t i = 0, j = 0;
@@ -70,7 +71,7 @@ COM_INNER_DECL size_t decode_url(char *url, uint8_t *buf, size_t n)
         else
         {
             buf[j] = url[i];
-            if (url[i] == '?')
+            if (url[i] == '?' && key_size == n)
             {
                 key_size = j;
             }
@@ -95,8 +96,9 @@ void free_syntax_block_content(action_syntax_t *syntax_block)
     }
 }
 
-COM_INNER_DECL int GET_req_parser_kw(char *req, size_t n,
-                                     action_syntax_t *syntax_block)
+// donot parse query
+COM_INNER_DECL int GET_req_parser(char *req, size_t n,
+                                  action_syntax_t *syntax_block)
 {
     size_t should_skipped_byte = 5; // skip "GET /"
     uint8_t *alloc_key = NULL;
@@ -106,26 +108,35 @@ COM_INNER_DECL int GET_req_parser_kw(char *req, size_t n,
         goto FAIL;
     }
 
-    char *key_ptr = req + should_skipped_byte;
+    char *key_start = req + should_skipped_byte;
 
-    char *first_whitespace_pos = strchr(key_ptr, ' ');
+    char *key_end = strchr(key_start, '?');
 
-    if (first_whitespace_pos == NULL)
+    char *after_URL_whitespace = strchr(key_start, ' ');
+    if (after_URL_whitespace == NULL)
     {
         log_msg_debug("wrong format request");
         goto FAIL;
     }
 
+    if (key_end == NULL)
+    {
+        // no query
+        log_msg_debug("get req has not query symbol");
+        key_end = after_URL_whitespace;
+    }
+
     // key is allowed to be encoded invisiable byte
-    if (first_whitespace_pos - key_ptr == 0)
+    if (key_end - key_start == 0)
     {
         log_msg_debug("key size is 0");
         goto FAIL;
     }
-    alloc_key = malloc(first_whitespace_pos - key_ptr);
+    alloc_key = malloc((key_end - key_start) * sizeof(uint8_t));
     size_t key_size =
-        decode_url(key_ptr, alloc_key, first_whitespace_pos - key_ptr);
-
+        decode_url(key_start, alloc_key, key_end - key_start);
+    // make sure correct c-style string
+    alloc_key[key_size] = '\0';
     syntax_block->key_size = key_size;
     syntax_block->key = alloc_key;
     syntax_block->val = NULL;
@@ -168,12 +179,12 @@ FAIL:
 }
 
 // TODO:gtest
-COM_INNER_DECL int url_query_kv_part(char *s, action_syntax_t *syntax_block,
+COM_INNER_DECL int check_kv_in_query(char *s, action_syntax_t *syntax_block,
                                      size_t n)
 {
     char buf[128] = {0};
     char *key_end = strchr(s, '=');
-    if (key_end == NULL || key_end - s >= n)
+    if (key_end == NULL || key_end - s + 1 >= n)
     {
         return -1;
     }
@@ -220,7 +231,7 @@ COM_INNER_DECL int url_query_parser(char *URL_without_start_slash,
     syntax_block->TTL = 0;
     syntax_block->data_type = 0;
 
-    if (-1 == url_query_kv_part(start_query, syntax_block, end_q1 - start_query))
+    if (-1 == check_kv_in_query(start_query, syntax_block, end_q1 - start_query))
     {
         log_msg_debug("not a correct query in the url");
     }
@@ -232,7 +243,7 @@ COM_INNER_DECL int url_query_parser(char *URL_without_start_slash,
     }
     char *start_q2 = end_q1 + 1;
 
-    if (-1 == url_query_kv_part(start_q2, syntax_block, URL_without_start_slash + URL_without_start_slash_N - start_q2))
+    if (-1 == check_kv_in_query(start_q2, syntax_block, URL_without_start_slash + URL_without_start_slash_N - start_q2))
     {
         log_msg_debug("not a correct query in the url");
     }
@@ -416,7 +427,7 @@ int http_req_parser(uint8_t *req, size_t n, action_syntax_t *syntax_block)
     switch (syntax_block->action)
     {
     case sat_GET:
-        if (GET_req_parser_kw(req, n, syntax_block) == -1)
+        if (GET_req_parser(req, n, syntax_block) == -1)
         {
             goto FAIL;
         }
