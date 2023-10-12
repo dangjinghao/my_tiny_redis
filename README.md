@@ -1,97 +1,39 @@
-## limits
-key size limit: < 2k
-## My Plan
-- persistence(data serialization)
-- memory leak check
-- logs recovery(action serialization)
-- memory snapshort (little CRIU)
+## tiny redis
 
-- BIG req/res size supports and max limits[done]
-- TTL support(timer_fd)[done]
-- lazy TTL deletion[done]
-- using LLRBtree to store and search data [done]
-- try gtest [done]
-- query [done]
-- for invisible byte, using url encode, 0x08 -> %08 [done]
-- SOCKET and data structure training && programming [done]
-- http request support [done]
-- io uring [done]
-- simple log [done]
-- makefile [done]
-- ~~try to program with cpp~~ Hybird-programming based on C and C++ [done]
-## action
+### A simple and stupid tiny redis server implementation, only supports string as value,used for learning purpose
 
-**PUT**
-```
-PUT /[key](?TTL=[secs?0=ferver]&TYPE=[...]) HTTP/x.x\r\n
-...(skip those headers)
-Content-Length: [length]\r\n
-...
-[val]\r\n
-```
+### What did I do
+- No persistence support
+- TTL support(lazy deletion(when access) / timer deletion(scaning whole the search tree periodically)
+- Left-Leaning RB Tree structure
+- Basic socket programming
+- Http request as commands(url decode support)
+- Hybird programming based on C and C++
+- Basic gtest unit tests (very limited coverage)
+- Single thread, no race condition
+- Event loop based on io uring
+- Basic io uring using
 
+### specail dependencies
+- IO\_Uring
+- gtest
 
-**DELETE** 
-```
-DELETE /[key] HTTP/x.x\r\n
-```
+### examples
 
-**MODIFY** (for LIST/SET)
-```
-POST /[key](?ttl=[secs]) HTTP/x.x\r\n
-...(skip those headers)
-Content-Length: [length]\r\n
-...
-[val]\r\n
-```
-special key(key/advanced_act) for list 
-if adv_act exists,reset ttl
+upload a string as the value
+> curl -X POST -d "value" "localhost:8000/key"
 
-**GET**
-```
-GET /[key] HTTP/x.x\r\n
-```
+upload a file content as the value 
+> curl -X POST -T 200M.txt "localhost:8000/200M"
 
-When using '' or "", don't escape value.
+TTL/s 
+> curl -X POST -d "value" "localhost:8000/key?TTL=10"
 
-**TODO**
-
-~~maybe list is not necessary~~
-
-## content type
-    "STRING", ziplist
-    "SET", rbtree store val
-    "LIST", zip/link list
-    <!-- "HASH", -->
-
-### STRING
-unnecessary
-
-### SET
-
-sadd -> add item
-
-> PUT /[key]/sadd ...
-
-srm -> ...
-> PUT /[key]/srm
-exists
-> PUT /[key]/exists ... [val]
-
-GET -> all members
-### LIST
-all PUT
-
-lpop
-
-rpop
-
-key/insert/idx
-
-key/idx_get/idx
-
-llen
+delete
+> curl -X DELETE "localhost:8000/key"
 
 
-
-
+### limits
+- MAX KEY SIZE: less than 2048 byte (design bug)
+- MAX VALUE SIZE: less than 512 MB
+- **NO PERSISTENCE SUPPORT**

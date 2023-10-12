@@ -183,6 +183,12 @@ void EV_READ_DONE_handler(struct io_uring_cqe *cqe, struct io_uring *ring, struc
         return;
     }
 
+    // request body size limit
+    if (read_buf->used > MAX_RECV_BUFFER_SIZE)
+    {
+        err_msg = "the request is too large!\n";
+        goto SEND_ERROR_MSG;
+    }
     // first time we need get the body
     if (prev_used == 0)
     {
@@ -231,7 +237,6 @@ void EV_READ_DONE_handler(struct io_uring_cqe *cqe, struct io_uring *ring, struc
     return;
 
 READ_ALL:
-    // TODO: content max size limit is inactive
     buffer_size = solver(read_buf->data, read_buf->used, &send_buf);
     // we don't need this read buffer now
     free(read_buf->data);
