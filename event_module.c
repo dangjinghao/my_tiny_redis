@@ -1,3 +1,4 @@
+#include "syntax.h"
 #include "test_common.h"
 
 #include <bits/time.h>
@@ -36,10 +37,10 @@ void new_accept_event(struct io_uring *ring, int serverfd, struct sockaddr *addr
     io_uring_sqe_set_data(sqe, info);
 }
 
-void new_recv_event(struct io_uring *ring, int clientfd, void *read_buf, size_t buf_size, int flags, void *reuse_heap_info)
+void new_recv_event(struct io_uring *ring, int clientfd, struct read_buffer* read_buf, int flags, void *reuse_heap_info)
 {
     struct io_uring_sqe *sqe = io_uring_get_sqe(ring);
-    io_uring_prep_recv(sqe, clientfd, read_buf, buf_size, flags);
+    io_uring_prep_recv(sqe, clientfd, read_buf->data + read_buf->used, read_buf->len - read_buf->used, flags);
 
     struct event_info *info = reuse_heap_info;
     info->data = read_buf;
@@ -50,12 +51,12 @@ void new_recv_event(struct io_uring *ring, int clientfd, void *read_buf, size_t 
 }
 
 // submit new send event
-void new_send_event(struct io_uring *ring, int clientfd, void *write_buf, size_t n, int flags, void *reuse_heap_info)
+void new_send_event(struct io_uring *ring, int clientfd, struct write_buffer*wb, int flags, void *reuse_heap_info)
 {
     struct io_uring_sqe *sqe = io_uring_get_sqe(ring);
-    io_uring_prep_send(sqe, clientfd, write_buf, n, flags);
+    io_uring_prep_send(sqe, clientfd, wb->data+wb->sent, wb->len - wb->sent, flags);
     struct event_info *info = reuse_heap_info;
-    info->data = write_buf;
+    info->data = wb;
     info->evtype = EV_WRITE_DONE;
     info->sockfd = clientfd;
     io_uring_sqe_set_data(sqe, info);

@@ -25,7 +25,8 @@ const char *type_str[] = {
     "LIST",
 };
 
-COM_INNER_DECL int valid_action(char *s)
+// return the action enum
+int valid_action(char *s)
 {
     if (s == NULL)
         return -1;
@@ -155,8 +156,8 @@ FAIL:
 }
 
 // return the end position of Content-Length line(no contains \r\n)
-COM_INNER_DECL char *Content_Length_in_header(char *req, size_t n,
-                                              size_t *num)
+char *Content_Length_in_header(char *req, size_t n,
+                               size_t *num)
 {
     char *content_length_pos = strstr(req, "Content-Length: ");
     if (content_length_pos == NULL || content_length_pos - req + 16 >= n)
@@ -259,6 +260,8 @@ COM_INNER_DECL int advanced_operator()
 }
 
 // TODO:gtest
+//
+// allocate key and value when success
 COM_INNER_DECL int content_parser(size_t should_skipped_byte, char *req,
                                   size_t n, action_syntax_t *syntax_block)
 {
@@ -320,7 +323,7 @@ COM_INNER_DECL int content_parser(size_t should_skipped_byte, char *req,
     char *body_start = double_CRLF + 4; // skip \\r\\n\\r\\n
 
     alloc_value = malloc(Content_Length_header);
-    memcpy(alloc_value, body_start, Content_Length_header);
+    memmove(alloc_value, body_start, Content_Length_header);
 
     syntax_block->key_size = key_size;
     syntax_block->key = alloc_key;
@@ -398,7 +401,7 @@ FAIL:
 }
 
 // TODO:gtest
-// heap memory will be used, calling free_syntax_block_content to free the used heap memory after  use
+// heap memory will be used when success, calling free_syntax_block_content to free the used heap memory after used
 int http_req_parser(uint8_t *req, size_t n, action_syntax_t *syntax_block)
 {
     char *first_whitespace_pos = strchr((const char *)req, ' ');

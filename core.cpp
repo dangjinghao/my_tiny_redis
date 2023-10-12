@@ -69,7 +69,7 @@ struct tiny_string
         }
 
         memcpy((*ts)->p, s, sizeof(uint8_t) * n);
-        
+
         (*ts)->used = n;
         return 0;
     }
@@ -80,15 +80,15 @@ struct trds_Object
     syntax_data_type type;
     void *ptr;
     time_t dead_ts;
-    trds_Object(syntax_data_type type, void *ptr,time_t ts_secs) :
-        type(type), ptr(ptr),dead_ts(ts_secs)
+    trds_Object(syntax_data_type type, void *ptr, time_t ts_secs) :
+        type(type), ptr(ptr), dead_ts(ts_secs)
     {
     }
-    static trds_Object*create(syntax_data_type type, void *ptr,time_t ts_secs = 0)
+    static trds_Object *create(syntax_data_type type, void *ptr, time_t ts_secs = 0)
     {
         return new trds_Object(type, ptr, ts_secs);
     }
-    static void remove(trds_Object* o)
+    static void remove(trds_Object *o)
     {
         delete o;
     }
@@ -99,13 +99,12 @@ static red_black_BST<tiny_string, trds_Object> data_tree;
 struct
 {
     size_t key_max = 1024;
-    size_t val_max = 512 * 1024 *1024;
+    size_t val_max = 512 * 1024 * 1024;
 
 } core_config;
 
 extern "C"
 {
-
     // copy data from syn_block, you can free the syn block memory safety after calling this function
     int put_into_tree(action_syntax_t *syn_block)
     {
@@ -122,10 +121,10 @@ extern "C"
         ts_key = tiny_string::create(syn_block->key, key_size);
         // until now, it only supports string value.
 
-        if(syn_block->TTL !=0)
+        if (syn_block->TTL != 0)
         {
             struct timespec tmspec;
-            timespec_get(&tmspec,TIME_UTC);
+            timespec_get(&tmspec, TIME_UTC);
 
             dead_time = tmspec.tv_sec + syn_block->TTL;
         }
@@ -146,8 +145,8 @@ extern "C"
         else
         {
             ts_val = tiny_string::create(syn_block->val, val_size);
-            val_warp = trds_Object::create(sdt_STRING, (void *)ts_val,dead_time);
-            
+            val_warp = trds_Object::create(sdt_STRING, (void *)ts_val, dead_time);
+
             data_tree.put(ts_key, val_warp);
         }
         return 0;
@@ -175,21 +174,21 @@ extern "C"
             goto NO_REL;
         }
         struct timespec tmspec;
-        timespec_get(&tmspec,TIME_UTC);
+        timespec_get(&tmspec, TIME_UTC);
 
-        if(rel_val->dead_ts!=0 && rel_val->dead_ts <= tmspec.tv_sec)
+        if (rel_val->dead_ts != 0 && rel_val->dead_ts <= tmspec.tv_sec)
         {
-            data_tree.remove(ts_key);            
+            delete_in_tree(syn_block);
             *tiny_str_ref = NULL;
 
             goto NO_REL;
         }
-        
+
         assert(rel_val->type == sdt_STRING); // until now, it only supports string value.
         *tiny_str_ref = (tiny_string_raw *)rel_val->ptr;
 
         return 0;
-NO_REL:
+    NO_REL:
         tiny_string::remove(ts_key);
         return -2;
     }
@@ -212,36 +211,53 @@ NO_REL:
         // delete the tin stirng value
         tiny_string::remove((tiny_string *)rel_val->ptr);
 
-        // delete the warp obj data 
+        // delete the warp obj data
         trds_Object::remove(rel_val);
-        
+
         // delete the reference in rbtree
         data_tree.remove(ts_key);
 
         // delete the key data
-        tiny_string::remove(ts_key);        
+        tiny_string::remove(ts_key);
 
         return 0;
-
     }
 
     int clear_outdated_node()
     {
         struct timespec now_tm;
-        timespec_get(&now_tm,TIME_UTC);
+        timespec_get(&now_tm, TIME_UTC);
         auto now_ts = now_tm.tv_sec;
-        
+
         auto nodes = data_tree.keys();
-        for (auto&k : nodes) {
-            if(data_tree.get(k)->dead_ts < now_ts)
+        for (auto &k : nodes)
+        {
+            auto res = data_tree.get(k);
+            if (res->dead_ts > 0 && res->dead_ts < now_ts)
             {
-                char*buf = (char*)malloc(sizeof(char)*k->used + 1);
-                memcpy(buf,k->p,k->used);
+                char *buf = (char *)malloc(sizeof(char) * k->used + 1);
+                memcpy(buf, k->p, k->used);
                 buf[k->used] = '\0';
-                log_printf_info((char*)"the node of `%s` is outdated, removing...\n",buf);
+                log_printf_info((char *)"the node of `%s` is outdated, removing...\n", buf);
                 data_tree.remove(k);
+                tiny_string::remove(k);
+                tiny_string::remove((tiny_string *)res->ptr);
+                trds_Object::remove(res);
             }
         }
         return 0;
+    }
+    void release_all_data_in_core_tree()
+    {
+        auto nodes = data_tree.keys();
+        for (auto &k : nodes)
+        {
+            auto res = data_tree.get(k);
+            data_tree.remove(k);
+            tiny_string::remove(k);
+            tiny_string::remove((tiny_string *)res->ptr);
+            trds_Object::remove(res);
+        }
+        data_tree.clean_all_ref();
     }
 }

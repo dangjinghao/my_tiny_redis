@@ -411,7 +411,7 @@ class red_black_BST
         return rel;
     }
 
-    void clean_all()
+    void clean_all_ref()
     {
         if (is_empty()) return;
         auto nodes_array = all_nodes();

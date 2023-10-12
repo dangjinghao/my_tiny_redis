@@ -1,11 +1,10 @@
 ## My Plan
-- comments
-- BIG req/res size supports
 - persistence(data serialization)
 - memory leak check
 - logs recovery(action serialization)
 - memory snapshort (little CRIU)
 
+- BIG req/res size supports and max limits[done]
 - TTL support(timer_fd)[done]
 - lazy TTL deletion[done]
 - using LLRBtree to store and search data [done]
@@ -70,16 +69,16 @@ unnecessary
 
 sadd -> add item
 
-> POST /[key]/sadd ...
+> PUT /[key]/sadd ...
 
 srm -> ...
-> POST /[key]/srm
+> PUT /[key]/srm
 exists
-> POST /[key]/exists ... [val]
+> PUT /[key]/exists ... [val]
 
 GET -> all members
 ### LIST
-all POST
+all PUT
 
 lpop
 

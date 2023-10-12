@@ -13,12 +13,9 @@
 #include "gtest_all_func.h"
 #include "syntax.h"
 
-
-
 int main(int argc, char const *argv[])
 {
     set_log_level(LOG_DEBUG);
-
 
     std::cout << "valid_action test" << std::endl;
 
@@ -111,40 +108,46 @@ int main(int argc, char const *argv[])
 
     std::cout << "Content_Length_in_header test done" << std::endl;
 
-    std::cout<< "check_kv_in_query test start" <<std::endl;
-    char* kv_s = "TTL=12443&TYPE=STRING"; 
+    std::cout << "check_kv_in_query test start" << std::endl;
+    char *kv_s = "TTL=12443&TYPE=STRING";
     action_syntax_t syn_block;
-    EXPECT_EQ(check_kv_in_query(kv_s,&syn_block,0),-1);
-    EXPECT_EQ(check_kv_in_query(kv_s,&syn_block,3),-1);
-    EXPECT_EQ(check_kv_in_query(kv_s,&syn_block,4),-1);
-    EXPECT_EQ(check_kv_in_query(kv_s,&syn_block,5),0);
-    EXPECT_EQ(syn_block.TTL,1);
-    EXPECT_EQ(check_kv_in_query(kv_s+10,&syn_block,2),-1);
-    EXPECT_EQ(check_kv_in_query(kv_s+10,&syn_block,5),-1);
-    EXPECT_EQ(check_kv_in_query(kv_s+10,&syn_block,11),0);
-    EXPECT_EQ(syn_block.data_type,sdt_STRING);
+    EXPECT_EQ(check_kv_in_query(kv_s, &syn_block, 0), -1);
+    EXPECT_EQ(check_kv_in_query(kv_s, &syn_block, 3), -1);
+    EXPECT_EQ(check_kv_in_query(kv_s, &syn_block, 4), -1);
+    EXPECT_EQ(check_kv_in_query(kv_s, &syn_block, 5), 0);
+    EXPECT_EQ(syn_block.TTL, 1);
+    EXPECT_EQ(check_kv_in_query(kv_s + 10, &syn_block, 2), -1);
+    EXPECT_EQ(check_kv_in_query(kv_s + 10, &syn_block, 5), -1);
+    EXPECT_EQ(check_kv_in_query(kv_s + 10, &syn_block, 11), 0);
+    EXPECT_EQ(syn_block.data_type, sdt_STRING);
 
-    std::cout<< "check_kv_in_query test done" <<std::endl;
+    std::cout << "check_kv_in_query test done" << std::endl;
 
     std::cout << "llrbtree test" << std::endl;
 
-    red_black_BST<char,int> rbb;
+    red_black_BST<char, int> rbb;
     char s[] = "43217";
-    int v[] = {0,0,0,0,0,0,};
-    
-    for(auto i :std::views::iota(0,(int)(sizeof(s) - 1)))
+    int v[] = {
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+    };
+
+    for (auto i : std::views::iota(0, (int)(sizeof(s) - 1)))
     {
-        rbb.put(s+i,v+i);
+        rbb.put(s + i, v + i);
     }
-    for(auto i :rbb.keys())
+    for (auto i : rbb.keys())
     {
-        std::cout<<*i<<std::endl;
+        std::cout << *i << std::endl;
     }
-    rbb.clean_all();
+    rbb.clean_all_ref();
     EXPECT_TRUE(rbb.is_empty());
 
     std::cout << "llrbtree test done" << std::endl;
-
 
     return 0;
 }

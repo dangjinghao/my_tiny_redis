@@ -47,4 +47,16 @@ typedef struct action_syntax
     adv_opt_type adv_opt;
 } action_syntax_t;
 
+struct read_buffer
+{
+    uint8_t *data;
+    size_t len;
+    size_t used;
+};
+struct write_buffer
+{
+    uint8_t *data;
+    size_t len;
+    size_t sent;
+};
 #endif
