@@ -1,3 +1,5 @@
+## limits
+key size limit: < 2k
 ## My Plan
 - persistence(data serialization)
 - memory leak check
